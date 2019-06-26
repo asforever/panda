@@ -1,0 +1,11 @@
+//common
+.idea
+*/node_modules
+
+//client
+client/package-lock.json
+
+//server
+server/**/.next
+server/.next
+server/package-lock.json
