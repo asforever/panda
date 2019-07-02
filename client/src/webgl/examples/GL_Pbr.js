@@ -1,54 +1,70 @@
-import * as Panda from "../panda";
+import {WebglState, ShaderLib, Vector3, WebglRenderTarget, WebglTexture2D, WebglTextureCube} from "../panda";
+import FileLoader from "../../util/FileLoader";
 
-import WebGLBaseDemo from "./WebGLBaseDemo";
-/*import ResourceManager from "../../resource/ResourceManager";*/
+import * as glm from "gl-matrix";
 
-export default class GL_Pbr extends WebGLBaseDemo {
-    setUp(canvas) {
-        super.setUp(canvas);
-        this.meshes = [];
-        this.loadScene();
-    }
+export default class GL_Pbr {
 
-    async loadScene() {
-        /* const image = await ResourceManager.getInstance().getImage(ResourceManager.WebAPI.DIFFUSE_CONTAINER2);*/
-        this.camera.position.set(25, 0, 0);
-        this.camera.updateMatrix();
-        this.camera.lookAt(new Panda.Vector3(0, 0, 0));
+    async setUp(canvas) {
+        const fileLoader = new FileLoader();
+        const hdrEnvMap = await fileLoader.load("./assets/textures/awesomeface.png", undefined, FileLoader.IMAGE);
 
-        this.renderer.state.extensions.get(Panda.WebGLExtensions.OES_STANDARD_DERIVATIVES);
-        this.renderer.state.extensions.get(Panda.WebGLExtensions.EXT_SHADER_TEXTURE_LOD);
+        const state = new WebglState(canvas);
+        const gl = state.getContext();
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
 
-        //  const texture = new Panda.Texture2D({image: image});
+        const pbrSource = ShaderLib.pbr;
+        const pbrProgram = state.createProgram(pbrSource.vs, pbrSource.fs);
 
-        const row = 5, col = 5, radius = 1;
-        const geometry = new Panda.SphereGeometry(radius);
+        const brdfSource = ShaderLib.brdf;
+        const brdfProgram = state.createProgram(brdfSource.vs, brdfSource.fs);
 
-        for (let i = 0; i < row; i++) {
-            for (let j = 0; j < col; j++) {
-                let x = 0, y = row / 2 * (i - row / 2), z = col / 2 * (j - col / 2);
-                const material = new Panda.MeshPbrMaterial({color: new Panda.Color(1, 1, 1)});
-                material.metallic = i / row + 0.03;
-                material.roughness = j / col + 0.03;
-                material.ao = 0.3;
-                let mesh = new Panda.Mesh(geometry, material);
-                mesh.position.set(x, y, z);
-                mesh.rotation.set(0, Math.PI/-3, 0);
-                mesh.updateMatrix();
-                this.meshes.push(mesh);
-                this.scene.add(mesh);
-            }
-        }
+        const backgroundSource = ShaderLib.background;
+        const backgroundProgram = state.createProgram(backgroundSource.vs, backgroundSource.fs);
 
-        this.startAnimate();
-        this.resize();
-    }
+        const convert2dToCubemapSource = ShaderLib.convert_2d_to_cubemap;
+        const convert2dToCubemapProgram = state.createProgram(convert2dToCubemapSource.vs, convert2dToCubemapSource.fs);
 
-    render() {
-        this.meshes.forEach(mesh=>{
-            mesh.updateMatrix();
-        });
-        this.renderer.render(this.scene, this.camera);
-    }
+        const irradianceConvolutionSource = ShaderLib.irradiance_convolution;
+        const irradianceConvolutionProgram = state.createProgram(convert2dToCubemapSource.vs, irradianceConvolutionSource.fs);
+
+        const prefilterSource = ShaderLib.irradiance_convolution;
+        const prefilterProgram = state.createProgram(convert2dToCubemapSource.vs, prefilterSource.fs);
+
+        state.use(pbrProgram);
+        state.setInt("irradianceMap", 0);
+        state.setInt("prefilterMap", 1);
+        state.setInt("brdfLUT", 2);
+        state.setVec3("albedo", 0.5, 0.0, 0.0);
+        state.setFloat("ao", 1.0);
+
+        state.use(backgroundProgram);
+        state.setInt("environmentMap", 0);
+
+        const lightPositions = [
+            new Vector3(10, 10, 10),
+            new Vector3(-10, -10, 10),
+            new Vector3(10, -10, 10)
+        ];
+
+        const lightColors = [
+            new Vector3(300, 300, 300),
+            new Vector3(300, 300, 300),
+            new Vector3(300, 300, 300)
+        ];
+
+        const nrRows = 7;
+        const nrColumns = 7;
+        const spacing = 2.5;
+
+        const renderTarget = new WebglRenderTarget(gl, 500, 500);
+        const envMap = new WebglTexture2D(gl, hdrEnvMap);
+        const prefilterMap = new WebglTextureCube(gl);
+
+        const captureProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 4, 1.0, 0.1, 10);
+
+
+    };
 
 }
