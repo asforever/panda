@@ -1,6 +1,7 @@
 export default class FileLoader {
     static TEXT = "text";
     static IMAGE = "image";
+    static ARRAY_BUFFER = "array buffer";
 
     async load(url, option, format) {
         let defaultOption = Object.assign(option || {}, {
@@ -35,6 +36,10 @@ export default class FileLoader {
                     }
                 });
 
+                break;
+            case FileLoader.ARRAY_BUFFER:
+                const buffer = await response.arrayBuffer();
+                result = buffer;
                 break;
             default:
                 result = response.json();

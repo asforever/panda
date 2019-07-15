@@ -10,11 +10,48 @@ export default class WebglState {
         return this._gl;
     }
 
-    createProgram(vsSource, fsSource) {
+    //create
+    createTexture2D({
+                        image, internalFormat, width, height, format, type
+                        , ws, wt, minF, maxF
+                    }) {
         const gl = this._gl;
-        return Webgl2Api.createProgram(gl, vsSource, fsSource);
+        const textureBuffer = Webgl2Api.createTexture(gl, false, ws, wt, minF, maxF);
+        Webgl2Api.updateTexture2D(gl, textureBuffer, image, internalFormat, width, height, format, type);
+        return textureBuffer;
     }
 
+    createTextureCube({
+                          imageArr, internalFormat, width, height, format, type
+                          , ws, wt, minF, maxF
+                      }) {
+
+        const gl = this._gl;
+        const textureBuffer = Webgl2Api.createTexture(gl, true, ws, wt, minF, maxF);
+        Webgl2Api.updateTextureCube(gl, textureBuffer, imageArr, internalFormat, width, height, format, type);
+        return textureBuffer;
+    }
+
+    createProgramInfo(vsSource, fsSource) {
+        const gl = this._gl;
+        return Webgl2Api.createProgramInfo(gl, vsSource, fsSource);
+    }
+
+    createRenderTarget(width, height) {
+        return Webgl2Api.createRenderTarget(this._gl, width, height);
+    }
+
+    createVaoFromGeometry(geometry) {
+        const filterAttributes = [];
+        const attributes = geometry.attributes;
+        Object.keys(attributes).forEach((key, index) => {
+            if ((1 << index) & geometry.attributesCode) filterAttributes.push(attributes[key]);
+        });
+
+        return Webgl2Api.createVaoAndBindAttributes(this._gl, filterAttributes, geometry.indices);
+    }
+
+    //config
     use(program) {
         this.curProgram = program;
         this._gl.useProgram(program);
@@ -26,17 +63,95 @@ export default class WebglState {
         gl.uniform1i(uniformLocation, num);
     }
 
-    setVec3(location, x, y, z) {
-        const gl = this._gl;
-        const uniformLocation = gl.getUniformLocation(this.curProgram, location);
-        gl.uniform3fv(uniformLocation, [x, y, z]);
-    }
-
     setFloat(location, floatNum) {
         const gl = this._gl;
         const uniformLocation = gl.getUniformLocation(this.curProgram, location);
         gl.uniform1f(uniformLocation, floatNum);
     }
 
+    setVec3(location, x, y, z) {
+        const gl = this._gl;
+        const uniformLocation = gl.getUniformLocation(this.curProgram, location);
+        gl.uniform3fv(uniformLocation, [x, y, z]);
+    }
 
+    setMat4(location, mat4) {
+        const gl = this._gl;
+        const uniformLocation = gl.getUniformLocation(this.curProgram, location);
+        gl.uniformMatrix4fv(uniformLocation, false, mat4);
+    }
+
+    setTexture2D(location, textureBuffer, uint = 0, mipmap) {
+        const gl = this._gl;
+        const uniformLocation = gl.getUniformLocation(this.curProgram, location);
+        gl.uniform1i(uniformLocation, uint);
+        gl.activeTexture(gl.TEXTURE0 + uint);
+        gl.bindTexture(gl.TEXTURE_2D, textureBuffer);
+        if (mipmap) gl.generateMipmap(gl.TEXTURE_2D);
+    }
+
+    setTextureCube(location, webglTexture, uint = 0, mipmap) {
+        const gl = this._gl;
+        const uniformLocation = gl.getUniformLocation(this.curProgram, location);
+        gl.uniform1i(uniformLocation, uint);
+        gl.activeTexture(gl.TEXTURE0 + uint);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, webglTexture);
+        if (mipmap) gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+    }
+
+    generateMipmap(target, textureBuffer) {
+        const gl = this._gl;
+        gl.generateMipmap(target, textureBuffer);
+    }
+
+    setRenderTarget(renderTarget, texture) {
+        Webgl2Api.bindRenderTargetTexture(this._gl, renderTarget, texture);
+    }
+
+    setCubeRenderTarget(renderTarget, texture, uint, mipLevel) {
+        Webgl2Api.bindRenderTargetTextureCube(this._gl, renderTarget, texture, uint, mipLevel);
+    }
+
+    resizeRenderTarget(renderTarget, width, height) {
+        Webgl2Api.resizeRenderTarget(this._gl, renderTarget, width, height)
+    }
+
+    setVao(vao) {
+        this._gl.bindVertexArray(vao);
+    }
+
+    unBindRenderTarget() {
+        const gl = this._gl;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+
+    drawElements(vertexCount) {
+        const gl = this._gl;
+        const type = gl.UNSIGNED_SHORT;
+        const offset = 0;
+        gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+    }
+
+
+    viewport(x, y, width, height) {
+        this._gl.viewport(x, y, width, height);
+    }
+
+    setClearColor(r, g, b, a) {
+        this._gl.clearColor(r, g, b, a);
+    }
+
+    clear(clearCode) {
+        this._gl.clear(clearCode);
+    }
+
+    clearBufferfv(clearCode) {
+        this._gl.clearBufferfv(clearCode, 0, [0.3, 0.3, 0.3, 1.0]);
+    }
+
+    enableDepthTest(cap) {
+        const gl = this._gl;
+        gl.enable(cap);
+        if (cap) gl.depthFunc(gl.LEQUAL);
+    }
 }

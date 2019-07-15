@@ -1,4 +1,7 @@
 /* eslint import/no-webpack-loader-syntax: off */
+import test_vs from '!raw-loader!glslify-loader!./test/test_vs.glsl';
+import test_fs from '!raw-loader!glslify-loader!./test/test_fs.glsl';
+
 import pbr_vs from '!raw-loader!glslify-loader!./pbr/pbr_vs.glsl';
 /* eslint import/no-webpack-loader-syntax: off */
 import pbr_fs from '!raw-loader!glslify-loader!./pbr/pbr_fs.glsl';
@@ -14,7 +17,7 @@ import brdf_vs from '!raw-loader!glslify-loader!./brdf/brdf_vs.glsl';
 import brdf_fs from '!raw-loader!glslify-loader!./brdf/brdf_fs.glsl';
 
 /* eslint import/no-webpack-loader-syntax: off */
-import convert_2d_to_cubemap_vs from '!raw-loader!glslify-loader!./convert_2d_to_cubemap/convert_2d_to_cubemap_vs.glsl';
+import cube_map_vs from '!raw-loader!glslify-loader!./cubeMap/cube_map_vs.glsl';
 /* eslint import/no-webpack-loader-syntax: off */
 import convert_2d_to_cubemap_fs from '!raw-loader!glslify-loader!./convert_2d_to_cubemap/convert_2d_to_cubemap_fs.glsl';
 
@@ -25,6 +28,10 @@ import irradiance_convolution_fs
 import prefilter_fs from '!raw-loader!glslify-loader!./prefilter/prefilter_fs.glsl';
 
 const ShaderLib = {
+    test: {
+        vs: test_vs,
+        fs: test_fs,
+    },
     pbr: {
         vs: pbr_vs,
         fs: pbr_fs,
@@ -38,13 +45,15 @@ const ShaderLib = {
         fs: brdf_fs,
     },
     convert_2d_to_cubemap: {
-        vs: convert_2d_to_cubemap_vs,
+        vs: cube_map_vs,
         fs: convert_2d_to_cubemap_fs,
     },
     irradiance_convolution: {
+        vs: cube_map_vs,
         fs: irradiance_convolution_fs,
     },
-    prefilter_fs: {
+    prefilter: {
+        vs: cube_map_vs,
         fs: prefilter_fs,
     }
 };
