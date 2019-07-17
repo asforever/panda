@@ -1,6 +1,6 @@
 import Geometry from "./Geometry";
 import BufferAttribute from "./BufferAttribute";
-import Vector3 from "../../bak/panda/data/math/vector/Vector3";
+import Vector3 from "../math/Vector3";
 
 export default class SphereGeometry extends Geometry {
     constructor(radius = 1, rowSegments = 32, colSegments = 32) {
