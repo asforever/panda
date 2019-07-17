@@ -14,8 +14,12 @@ import * as glm from "gl-matrix";
 export default class GL_Pbr {
 
     async setUp(canvas) {
-        // const hdrEnvMap = await new HDRLoader().load("./assets/textures/hdr/newport_loft.hdr");
         const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);
+        const albedoMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/albedo.png", undefined, FileLoader.IMAGE);
+        const aoMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/ao.png", undefined, FileLoader.IMAGE);
+        const normalMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/normal.png", undefined, FileLoader.IMAGE);
+        const metallicMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/metallic.png", undefined, FileLoader.IMAGE);
+        const roughnessMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/roughness.png", undefined, FileLoader.IMAGE);
         //data
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -65,6 +69,37 @@ export default class GL_Pbr {
 
 
         const captureRenderTarget = state.createRenderTarget(512, 512);
+
+        const albedoTexture = state.createTexture2D({
+            image: albedoMap,
+            internalFormat: gl.RGBA,
+            format: gl.RGBA,
+            type: gl.UNSIGNED_BYTE
+        });
+        const aoTexture = state.createTexture2D({
+            image: aoMap,
+            internalFormat: gl.RGBA,
+            format: gl.RGBA,
+            type: gl.UNSIGNED_BYTE
+        });
+        const normalTexture = state.createTexture2D({
+            image: normalMap,
+            internalFormat: gl.RGBA,
+            format: gl.RGBA,
+            type: gl.UNSIGNED_BYTE
+        });
+        const metallicTexture = state.createTexture2D({
+            image: metallicMap,/*new Uint8Array(16*16*4),*/
+            internalFormat: gl.RGBA,
+            format: gl.RGBA,
+            type: gl.UNSIGNED_BYTE
+        });
+        const roughnessTexture = state.createTexture2D({
+            image: roughnessMap,
+            internalFormat: gl.RGBA,
+            format: gl.RGBA,
+            type: gl.UNSIGNED_BYTE
+        });
 
         const hdrMap = state.createTexture2D({
             image: hdrEnvMap,
@@ -205,8 +240,10 @@ export default class GL_Pbr {
         state.setTextureCube("irradianceMap", irradianceMap, 0);
         state.setTextureCube("prefilterMap", prefilterMap, 1);
         state.setTexture2D("brdfLUT", brdfMap, 2);
-        state.setVec3("albedo", 1, 1, 1);
-        state.setFloat("ao", 1.0);
+        state.setTexture2D("albedoMap", albedoTexture, 3);
+        state.setTexture2D("normalMap", normalTexture, 4);
+        state.setTexture2D("aoMap", aoTexture, 5);
+
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         const rowLen = 6;
@@ -223,12 +260,16 @@ export default class GL_Pbr {
         }
 
         for (let row = 0; row < rowLen; row++) {
-            state.setFloat("metallic", row / rowLen);
+            //state.setFloat("metallic", row / rowLen);
+            state.setTexture2D("metallicMap", metallicTexture, 6);
             let curModelPos = glm.vec3.scale(glm.vec3.create(), offsetH, row);
             for (let col = 0; col < colLen; col++) {
-                state.setFloat("roughness", col / colLen);
+                //state.setFloat("roughness", col / colLen);
+                state.setTexture2D("roughnessMap", roughnessTexture, 7);
                 let resultModelPos = glm.vec3.add(glm.vec3.create(), curModelPos, glm.vec3.scale(glm.vec3.create(), offsetV, col));
                 let resultModelView = glm.mat4.translate(glm.mat4.create(), model, resultModelPos);
+                glm.mat4.rotate(resultModelView, resultModelView, Math.PI / 2, glm.vec3.set(glm.vec3.create(), 1, 0, 0));
+
                 state.setMat4("model", resultModelView);
                 state.drawElements(sphereGeometry.indices.data.length);
             }

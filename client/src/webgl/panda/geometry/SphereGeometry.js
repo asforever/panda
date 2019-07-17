@@ -24,7 +24,7 @@ export default class SphereGeometry extends Geometry {
         //bottom point
         position.push(0, 0, -radius);
         normal.push(0, 0, -1);
-        uv.push(0.5,0);
+        uv.push(0.5, 0);
 
         for (let row = 0; row < rowSegments; row++) {
             for (let col = 0; col < colSegments; col++) {
@@ -44,7 +44,6 @@ export default class SphereGeometry extends Geometry {
                 }
 
 
-
                 if (row !== 0) {
                     let x = radius * Math.cos(latitude) * Math.sin(longitude)
                         , y = radius * Math.cos(latitude) * Math.cos(longitude)
@@ -53,7 +52,7 @@ export default class SphereGeometry extends Geometry {
 
                     position.push(x, y, z);
                     normal.push(normalVector.x, normalVector.y, normalVector.z);
-                    uv.push(longitude / Math.PI / 2, latitude / Math.PI / 2);
+                    uv.push(col / colSegments, row / rowSegments);
                 }
 
 
@@ -65,7 +64,7 @@ export default class SphereGeometry extends Geometry {
         //bottom point
         position.push(0, 0, radius);
         normal.push(0, 0, 1);
-        uv.push(0.5,1);
+        uv.push(0.5, 1);
 
         this.addAttribute("position", new BufferAttribute({
             name: "position",
