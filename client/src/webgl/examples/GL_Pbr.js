@@ -71,31 +71,41 @@ export default class GL_Pbr {
         const captureRenderTarget = state.createRenderTarget(512, 512);
 
         const albedoTexture = state.createTexture2D({
-            image: albedoMap,
+            image: /*metallicMap,*/new Uint8Array(16*16*4),
+            width: 16,
+            height: 16,
             internalFormat: gl.RGBA,
             format: gl.RGBA,
             type: gl.UNSIGNED_BYTE
         });
         const aoTexture = state.createTexture2D({
-            image: aoMap,
+            image: /*metallicMap,*/new Uint8Array(16*16*4),
+            width: 16,
+            height: 16,
             internalFormat: gl.RGBA,
             format: gl.RGBA,
             type: gl.UNSIGNED_BYTE
         });
         const normalTexture = state.createTexture2D({
-            image: normalMap,
+            image: /*metallicMap,*/new Uint8Array(16*16*4),
+            width: 16,
+            height: 16,
             internalFormat: gl.RGBA,
             format: gl.RGBA,
             type: gl.UNSIGNED_BYTE
         });
         const metallicTexture = state.createTexture2D({
-            image: metallicMap,/*new Uint8Array(16*16*4),*/
+            image: /*metallicMap,*/new Uint8Array(16*16*4),
+            width: 16,
+            height: 16,
             internalFormat: gl.RGBA,
             format: gl.RGBA,
             type: gl.UNSIGNED_BYTE
         });
         const roughnessTexture = state.createTexture2D({
-            image: roughnessMap,
+            image: /*metallicMap,*/new Uint8Array(16*16*4),
+            width: 16,
+            height: 16,
             internalFormat: gl.RGBA,
             format: gl.RGBA,
             type: gl.UNSIGNED_BYTE
@@ -246,8 +256,8 @@ export default class GL_Pbr {
 
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        const rowLen = 6;
-        const colLen = 6;
+        const rowLen = 2;
+        const colLen = 2;
         const space = sphereGeometry.radius;
         let model = glm.mat4.create();
         glm.mat4.translate(model, model, glm.vec3.set(glm.vec3.create(), -space * (rowLen - 1) / 2, -space * (colLen - 1) / 2, 0));
@@ -268,7 +278,7 @@ export default class GL_Pbr {
                 state.setTexture2D("roughnessMap", roughnessTexture, 7);
                 let resultModelPos = glm.vec3.add(glm.vec3.create(), curModelPos, glm.vec3.scale(glm.vec3.create(), offsetV, col));
                 let resultModelView = glm.mat4.translate(glm.mat4.create(), model, resultModelPos);
-                glm.mat4.rotate(resultModelView, resultModelView, Math.PI / 2, glm.vec3.set(glm.vec3.create(), 1, 0, 0));
+                glm.mat4.rotate(resultModelView, resultModelView, Math.PI / 2, glm.vec3.set(glm.vec3.create(), -1, 1, 1));
 
                 state.setMat4("model", resultModelView);
                 state.drawElements(sphereGeometry.indices.data.length);
