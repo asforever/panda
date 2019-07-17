@@ -81,7 +81,7 @@ export default class Webgl2Api {
         gl.texParameteri(texType, gl.TEXTURE_WRAP_T, wt || gl.CLAMP_TO_EDGE);
         gl.texParameteri(texType, gl.TEXTURE_MIN_FILTER, minF || gl.LINEAR);
         gl.texParameteri(texType, gl.TEXTURE_MAG_FILTER, maxF || gl.LINEAR);
-        if(isCubeTexture)gl.texParameteri(texType, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE); //need webgl 2.0
+        if (isCubeTexture) gl.texParameteri(texType, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE); //need webgl 2.0
         return texture;
     }
 
@@ -119,36 +119,37 @@ export default class Webgl2Api {
     }
 
     //update
-    static updateTexture2D(gl, texture, image = null, internalformat, width = -1, height = -1, format, type) {
+    static updateTexture2D(gl, texture, image = null, internalformat, width = -1, height = -1, format, type, levels = 0) {
         const level = 0
-            , realType = type||gl.UNSIGNED_BYTE
+            , realType = type || gl.UNSIGNED_BYTE
             , realInternalFormat = internalformat || gl.RGBA
             , realFormat = format || gl.RGBA;
 
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        if (width&&height>-1) {
+        if (width && height > -1) {
             gl.texImage2D(gl.TEXTURE_2D, level, realInternalFormat, width, height, 0, realFormat, realType, image);
         } else {
             gl.texImage2D(gl.TEXTURE_2D, level, realInternalFormat, realFormat, realType, image);
         }
+        if (levels > 0 && width > -1 && height > -1) gl.texStorage2D(gl.TEXTURE_2D, levels, realInternalFormat, width, height);
     }
 
-    static updateTextureCube(gl, texture, imageArr = null, internalformat, width = 1, height = 1, format, type) {
+    static updateTextureCube(gl, texture, imageArr = [], internalformat, width = -1, height = -1, format, type, levels = 0) {
         const level = 0
-            , realType = type||gl.UNSIGNED_BYTE
+            , realType = type || gl.UNSIGNED_BYTE
             , realInternalFormat = internalformat || gl.RGBA
             , realFormat = format || gl.RGBA;
 
-        if (imageArr) {
+        if (width > -1 && height > -1) {
             for (let i = 0; i < 6; ++i) {
-                gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, level, realInternalFormat, realFormat, realType, imageArr[i]);
+                gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, level, realInternalFormat, width, height, 0, realFormat, realType, imageArr[i] || null);
             }
         } else {
             for (let i = 0; i < 6; ++i) {
-                gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, level, realInternalFormat, width, height, 0, realFormat, realType, null);
+                gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, level, realInternalFormat, realFormat, realType, imageArr[i]);
             }
         }
-
+        if (levels > 0 && width > -1 && height > -1) gl.texStorage2D(gl.TEXTURE_CUBE_MAP, levels, realInternalFormat, width, height);
     }
 
     static bindRenderTargetTexture(gl, renderTarget, texture) {
@@ -160,7 +161,7 @@ export default class Webgl2Api {
     }
 
     static bindRenderTargetTextureCube(gl, renderTarget, texture, uint, mipLevel = 0) {
-        const frameBuffer = renderTarget ? renderTarget.frameBuffer :null;
+        const frameBuffer = renderTarget ? renderTarget.frameBuffer : null;
         gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + uint, texture, mipLevel);
     }

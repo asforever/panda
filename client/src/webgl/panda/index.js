@@ -1,4 +1,4 @@
-import WebglState from "./core/WebglState";
+import WebglState2 from "./core/WebglState2";
 
 import CubeGeometry from "./geometry/CubeGeometry";
 import QuadGeometry from "./geometry/QuadGeometry";
@@ -9,7 +9,7 @@ import Vector3 from "./math/Vector3";
 import ShaderLib from "./shaderLib/ShaderLib";
 
 export {
-    WebglState,
+    WebglState2,
     ShaderLib,
     Vector3,
     CubeGeometry,

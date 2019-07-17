@@ -1,5 +1,5 @@
 import {
-    WebglState,
+    WebglState2,
     ShaderLib,
     CubeGeometry,
     QuadGeometry,
@@ -30,11 +30,10 @@ export default class GL_Pbr {
             glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, 0, -1), glm.vec3.set(glm.vec3.create(), 0, -1, 0)),
         ];
 
-        const cameraProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 2, canvas.width / canvas.height, 0.1, 100);
-        const cameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 0, 0, 70), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, -1, 0));
-        const cameraPos = [0, 0, 70];
-
-
+        const cameraProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 3, canvas.width / canvas.height, 0.1, 100);
+        const cameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 30, 0, 70), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, -1, 0));
+        const cameraPos = [30, 0, 70];
+        
         const cubeGeometry = new CubeGeometry();
         const quadGeometry = new QuadGeometry();
         const sphereGeometry = new SphereGeometry(5);
@@ -53,7 +52,7 @@ export default class GL_Pbr {
         ];
 
         //ctx
-        const state = new WebglState(canvas)
+        const state = new WebglState2(canvas)
             , gl = state.getContext();
         gl.getExtension('EXT_color_buffer_float');
         gl.enable(gl.CULL_FACE);
@@ -90,13 +89,17 @@ export default class GL_Pbr {
             type: gl.FLOAT,
             width: 32, height: 32
         });
+
+        //prefilter map
         const prefilterMap = state.createTextureCube({
             internalFormat: gl.RGBA16F,
             format: gl.RGBA,
             type: gl.FLOAT,
             width: 128, height: 128,
             minF: gl.LINEAR_MIPMAP_LINEAR,
+            levels: 5
         });
+
 
         const brdfMap = state.createTexture2D({
             internalFormat: gl.RG16F,
@@ -155,17 +158,15 @@ export default class GL_Pbr {
             state.drawElements(36);
         }
         state.unBindRenderTarget();
-
         //prefilter map
         state.use(prefilterProgramInfo.program);
         state.setMat4("projection", captureProjection);
-        state.setTextureCube("environmentMap", envCubeMap, 0, true);
         state.setVao(cubeVAO);
 
         let maxMipLevels = 5;
         for (let mip = 0; mip < maxMipLevels; ++mip) {
-            const mipWidth = 128;
-            const mipHeight = 128;
+            const mipWidth = 128 * Math.pow(0.5, mip);
+            const mipHeight = 128 * Math.pow(0.5, mip);
             let roughness = mip / (maxMipLevels - 1);
             state.viewport(0, 0, mipWidth, mipHeight);
             state.resizeRenderTarget(captureRenderTarget, mipWidth, mipHeight);
@@ -173,23 +174,26 @@ export default class GL_Pbr {
 
             for (let i = 0; i < 6; ++i) {
                 state.setMat4("view", captureViews[i]);
-                state.setCubeRenderTarget(captureRenderTarget, prefilterMap, i);
+                state.setTextureCube("environmentMap", envCubeMap, 0, true);
+                state.setCubeRenderTarget(captureRenderTarget, prefilterMap, i, mip);
                 state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 state.drawElements(36);
             }
         }
-        state.generateMipmap(gl.TEXTURE_CUBE_MAP, prefilterMap);
         state.unBindRenderTarget();
 
+        //BRDF
+        gl.cullFace(gl.BACK);
         state.use(brdfProgramInfo.program);
         state.viewport(0, 0, 512, 512);
         state.setVao(quadVAO);
         state.resizeRenderTarget(captureRenderTarget, 512, 512);
         state.setRenderTarget(captureRenderTarget, brdfMap);
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        state.drawElements(6);
+        state.drawElements(quadGeometry.indices.data.length);
         state.unBindRenderTarget();
 
+        gl.cullFace(gl.FRONT);
         //pbr
         state.use(pbrProgramInfo.program);
         state.viewport(0, 0, canvas.width, canvas.height);
@@ -201,13 +205,13 @@ export default class GL_Pbr {
         state.setTextureCube("irradianceMap", irradianceMap, 0);
         state.setTextureCube("prefilterMap", prefilterMap, 1);
         state.setTexture2D("brdfLUT", brdfMap, 2);
-        state.setVec3("albedo", 0.1, 0.0, 0.0);
+        state.setVec3("albedo", 1, 1, 1);
         state.setFloat("ao", 1.0);
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         const rowLen = 6;
         const colLen = 6;
-        const space = sphereGeometry.radius * 1;
+        const space = sphereGeometry.radius;
         let model = glm.mat4.create();
         glm.mat4.translate(model, model, glm.vec3.set(glm.vec3.create(), -space * (rowLen - 1) / 2, -space * (colLen - 1) / 2, 0));
         let offsetH = glm.vec3.set(glm.vec3.create(), space, 0, 0);
@@ -219,10 +223,10 @@ export default class GL_Pbr {
         }
 
         for (let row = 0; row < rowLen; row++) {
-            state.setFloat("metallic", row / rowLen/2+0.15);
+            state.setFloat("metallic", row / rowLen);
             let curModelPos = glm.vec3.scale(glm.vec3.create(), offsetH, row);
             for (let col = 0; col < colLen; col++) {
-                state.setFloat("roughness", col / colLen/2+0.15);
+                state.setFloat("roughness", col / colLen);
                 let resultModelPos = glm.vec3.add(glm.vec3.create(), curModelPos, glm.vec3.scale(glm.vec3.create(), offsetV, col));
                 let resultModelView = glm.mat4.translate(glm.mat4.create(), model, resultModelPos);
                 state.setMat4("model", resultModelView);

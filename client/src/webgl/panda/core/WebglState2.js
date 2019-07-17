@@ -1,6 +1,6 @@
 import Webgl2Api from "../util/Webgl2Api";
 
-export default class WebglState {
+export default class WebglState2 {
     constructor(canvas) {
         this._gl = Webgl2Api.createWebglContext(canvas);
         this.curProgram = null;
@@ -10,28 +10,59 @@ export default class WebglState {
         return this._gl;
     }
 
-    //create
+    //texture
     createTexture2D({
-                        image, internalFormat, width, height, format, type
+                        image, internalFormat, width, height, format, type,levels
                         , ws, wt, minF, maxF
                     }) {
         const gl = this._gl;
         const textureBuffer = Webgl2Api.createTexture(gl, false, ws, wt, minF, maxF);
-        Webgl2Api.updateTexture2D(gl, textureBuffer, image, internalFormat, width, height, format, type);
+        Webgl2Api.updateTexture2D(gl, textureBuffer, image, internalFormat, width, height, format, type,levels);
         return textureBuffer;
     }
 
     createTextureCube({
-                          imageArr, internalFormat, width, height, format, type
+                          imageArr, internalFormat, width, height, format, type,levels
                           , ws, wt, minF, maxF
                       }) {
 
         const gl = this._gl;
         const textureBuffer = Webgl2Api.createTexture(gl, true, ws, wt, minF, maxF);
-        Webgl2Api.updateTextureCube(gl, textureBuffer, imageArr, internalFormat, width, height, format, type);
+        Webgl2Api.updateTextureCube(gl, textureBuffer, imageArr, internalFormat, width, height, format, type,levels);
         return textureBuffer;
     }
 
+    setTexture2D(location, textureBuffer, uint = 0) {
+        const gl = this._gl;
+        const uniformLocation = gl.getUniformLocation(this.curProgram, location);
+        gl.uniform1i(uniformLocation, uint);
+        gl.activeTexture(gl.TEXTURE0 + uint);
+        gl.bindTexture(gl.TEXTURE_2D, textureBuffer);
+    }
+
+    setTextureCube(location, webglTexture, uint = 0) {
+        const gl = this._gl;
+        const uniformLocation = gl.getUniformLocation(this.curProgram, location);
+        gl.uniform1i(uniformLocation, uint);
+        gl.activeTexture(gl.TEXTURE0 + uint);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, webglTexture);
+    }
+
+    generateMipmap(target, textureBuffer) {
+        const gl = this._gl;
+        gl.bindTexture(target, textureBuffer);
+        gl.generateMipmap(target, textureBuffer);
+    }
+
+    copyTexture({textureBuffer, target, texTarget,level = 0, internalFormat, x = 0, y = 0, width = 512, height = 512, border = 0}) {
+        const gl = this._gl
+            , resultInternalFormat = gl.RGBA;
+
+        gl.bindTexture(target, textureBuffer);
+        gl.copyTexImage2D(texTarget, level, resultInternalFormat, x, y, width, height, border);
+    }
+
+    //
     createProgramInfo(vsSource, fsSource) {
         const gl = this._gl;
         return Webgl2Api.createProgramInfo(gl, vsSource, fsSource);
@@ -79,29 +110,6 @@ export default class WebglState {
         const gl = this._gl;
         const uniformLocation = gl.getUniformLocation(this.curProgram, location);
         gl.uniformMatrix4fv(uniformLocation, false, mat4);
-    }
-
-    setTexture2D(location, textureBuffer, uint = 0, mipmap) {
-        const gl = this._gl;
-        const uniformLocation = gl.getUniformLocation(this.curProgram, location);
-        gl.uniform1i(uniformLocation, uint);
-        gl.activeTexture(gl.TEXTURE0 + uint);
-        gl.bindTexture(gl.TEXTURE_2D, textureBuffer);
-        if (mipmap) gl.generateMipmap(gl.TEXTURE_2D);
-    }
-
-    setTextureCube(location, webglTexture, uint = 0, mipmap) {
-        const gl = this._gl;
-        const uniformLocation = gl.getUniformLocation(this.curProgram, location);
-        gl.uniform1i(uniformLocation, uint);
-        gl.activeTexture(gl.TEXTURE0 + uint);
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, webglTexture);
-        if (mipmap) gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-    }
-
-    generateMipmap(target, textureBuffer) {
-        const gl = this._gl;
-        gl.generateMipmap(target, textureBuffer);
     }
 
     setRenderTarget(renderTarget, texture) {
