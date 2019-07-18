@@ -1,7 +1,6 @@
 #version 300 es
 
 precision mediump  float;
-
 out vec4 FragColor;
 in vec2 TexCoords;
 in vec3 WorldPos;
@@ -98,7 +97,12 @@ void main()
     float roughness = texture(roughnessMap, TexCoords).r;
     float ao = texture(aoMap, TexCoords).r;
 
+    #ifdef NORMAL_MAP
     vec3 N = getNormalFromMap();
+    #else
+    vec3 N = Normal;
+    #endif
+
     vec3 V = normalize(camPos - WorldPos);
     vec3 R = reflect(-V, N);
 

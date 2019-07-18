@@ -135,11 +135,13 @@ export default class Webgl2Api {
     }
 
     static updateTextureCube(gl, texture, imageArr = [], internalformat, width = -1, height = -1, format, type, levels = 0) {
+
         const level = 0
             , realType = type || gl.UNSIGNED_BYTE
             , realInternalFormat = internalformat || gl.RGBA
             , realFormat = format || gl.RGBA;
 
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
         if (width > -1 && height > -1) {
             for (let i = 0; i < 6; ++i) {
                 gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, level, realInternalFormat, width, height, 0, realFormat, realType, imageArr[i] || null);

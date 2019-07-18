@@ -15,11 +15,11 @@ export default class GL_Pbr {
 
     async setUp(canvas) {
         const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);
-        const albedoMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/albedo.png", undefined, FileLoader.IMAGE);
-        const aoMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/ao.png", undefined, FileLoader.IMAGE);
+        const albedoMap = new Uint8Array([255, 0, 0, 255]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/albedo.png", undefined, FileLoader.IMAGE);
+        const aoMap = new Uint8Array([255]);// await new FileLoader().load("./assets/textures/pbr/rusted_iron/ao.png", undefined, FileLoader.IMAGE);
         const normalMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/normal.png", undefined, FileLoader.IMAGE);
-        const metallicMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/metallic.png", undefined, FileLoader.IMAGE);
-        const roughnessMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/roughness.png", undefined, FileLoader.IMAGE);
+        const metallicMap = new Uint8Array([255]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/metallic.png", undefined, FileLoader.IMAGE);
+        const roughnessMap = new Uint8Array([255]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/roughness.png", undefined, FileLoader.IMAGE);
         //data
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -37,10 +37,10 @@ export default class GL_Pbr {
         const cameraProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 3, canvas.width / canvas.height, 0.1, 100);
         const cameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 30, 0, 70), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, -1, 0));
         const cameraPos = [30, 0, 70];
-        
+
         const cubeGeometry = new CubeGeometry();
         const quadGeometry = new QuadGeometry();
-        const sphereGeometry = new SphereGeometry(5);
+        const sphereGeometry = new SphereGeometry(5,64,64);
 
         const lightPositions = [
             glm.vec3.set(glm.vec3.create(), 0, 0, 30),
@@ -71,43 +71,42 @@ export default class GL_Pbr {
         const captureRenderTarget = state.createRenderTarget(512, 512);
 
         const albedoTexture = state.createTexture2D({
-            image: /*metallicMap,*/new Uint8Array(16*16*4),
-            width: 16,
-            height: 16,
+            image: albedoMap,
+            width: 1,
+            height: 1,
             internalFormat: gl.RGBA,
             format: gl.RGBA,
             type: gl.UNSIGNED_BYTE
         });
+
         const aoTexture = state.createTexture2D({
-            image: /*metallicMap,*/new Uint8Array(16*16*4),
-            width: 16,
-            height: 16,
-            internalFormat: gl.RGBA,
-            format: gl.RGBA,
+            image: aoMap,
+            width: 1,
+            height: 1,
+            internalFormat: gl.LUMINANCE,
+            format: gl.LUMINANCE,
             type: gl.UNSIGNED_BYTE
         });
         const normalTexture = state.createTexture2D({
-            image: /*metallicMap,*/new Uint8Array(16*16*4),
-            width: 16,
-            height: 16,
+            image: normalMap,
             internalFormat: gl.RGBA,
             format: gl.RGBA,
             type: gl.UNSIGNED_BYTE
         });
         const metallicTexture = state.createTexture2D({
-            image: /*metallicMap,*/new Uint8Array(16*16*4),
-            width: 16,
-            height: 16,
-            internalFormat: gl.RGBA,
-            format: gl.RGBA,
+            image: metallicMap,
+            width: 1,
+            height: 1,
+            internalFormat: gl.LUMINANCE,
+            format: gl.LUMINANCE,
             type: gl.UNSIGNED_BYTE
         });
         const roughnessTexture = state.createTexture2D({
-            image: /*metallicMap,*/new Uint8Array(16*16*4),
-            width: 16,
-            height: 16,
-            internalFormat: gl.RGBA,
-            format: gl.RGBA,
+            image: roughnessMap,
+            width: 1,
+            height: 1,
+            internalFormat: gl.LUMINANCE,
+            format: gl.LUMINANCE,
             type: gl.UNSIGNED_BYTE
         });
 
@@ -256,8 +255,8 @@ export default class GL_Pbr {
 
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        const rowLen = 2;
-        const colLen = 2;
+        const rowLen = 6;
+        const colLen = 6;
         const space = sphereGeometry.radius;
         let model = glm.mat4.create();
         glm.mat4.translate(model, model, glm.vec3.set(glm.vec3.create(), -space * (rowLen - 1) / 2, -space * (colLen - 1) / 2, 0));
@@ -270,11 +269,32 @@ export default class GL_Pbr {
         }
 
         for (let row = 0; row < rowLen; row++) {
-            //state.setFloat("metallic", row / rowLen);
+
+            metallicMap[0] = 255 / rowLen*row;
+            state.updateTexture2D({
+                textureBuffer: metallicTexture,
+                image: metallicMap,
+                width: 1,
+                height: 1,
+                internalFormat: gl.LUMINANCE,
+                format: gl.LUMINANCE,
+                type: gl.UNSIGNED_BYTE
+            });
+
             state.setTexture2D("metallicMap", metallicTexture, 6);
             let curModelPos = glm.vec3.scale(glm.vec3.create(), offsetH, row);
             for (let col = 0; col < colLen; col++) {
-                //state.setFloat("roughness", col / colLen);
+                roughnessMap[0]  = 255 / colLen*col;
+                state.updateTexture2D({
+                    textureBuffer: roughnessTexture,
+                    image: roughnessMap,
+                    width: 1,
+                    height: 1,
+                    internalFormat: gl.LUMINANCE,
+                    format: gl.LUMINANCE,
+                    type: gl.UNSIGNED_BYTE
+                });
+
                 state.setTexture2D("roughnessMap", roughnessTexture, 7);
                 let resultModelPos = glm.vec3.add(glm.vec3.create(), curModelPos, glm.vec3.scale(glm.vec3.create(), offsetV, col));
                 let resultModelView = glm.mat4.translate(glm.mat4.create(), model, resultModelPos);

@@ -12,24 +12,28 @@ export default class WebglState2 {
 
     //texture
     createTexture2D({
-                        image, internalFormat, width, height, format, type,levels
+                        image, internalFormat, width, height, format, type, levels
                         , ws, wt, minF, maxF
                     }) {
         const gl = this._gl;
         const textureBuffer = Webgl2Api.createTexture(gl, false, ws, wt, minF, maxF);
-        Webgl2Api.updateTexture2D(gl, textureBuffer, image, internalFormat, width, height, format, type,levels);
+        Webgl2Api.updateTexture2D(gl, textureBuffer, image, internalFormat, width, height, format, type, levels);
         return textureBuffer;
     }
 
     createTextureCube({
-                          imageArr, internalFormat, width, height, format, type,levels
+                          imageArr, internalFormat, width, height, format, type, levels
                           , ws, wt, minF, maxF
                       }) {
 
         const gl = this._gl;
         const textureBuffer = Webgl2Api.createTexture(gl, true, ws, wt, minF, maxF);
-        Webgl2Api.updateTextureCube(gl, textureBuffer, imageArr, internalFormat, width, height, format, type,levels);
+        Webgl2Api.updateTextureCube(gl, textureBuffer, imageArr, internalFormat, width, height, format, type, levels);
         return textureBuffer;
+    }
+
+    updateTexture2D({textureBuffer, image, internalFormat, width, height, format, type, levels}) {
+        Webgl2Api.updateTexture2D(this._gl, textureBuffer, image, internalFormat, width, height, format, type, levels);
     }
 
     setTexture2D(location, textureBuffer, uint = 0) {
@@ -54,7 +58,7 @@ export default class WebglState2 {
         gl.generateMipmap(target, textureBuffer);
     }
 
-    copyTexture({textureBuffer, target, texTarget,level = 0, internalFormat, x = 0, y = 0, width = 512, height = 512, border = 0}) {
+    copyTexture({textureBuffer, target, texTarget, level = 0, internalFormat, x = 0, y = 0, width = 512, height = 512, border = 0}) {
         const gl = this._gl
             , resultInternalFormat = gl.RGBA;
 
