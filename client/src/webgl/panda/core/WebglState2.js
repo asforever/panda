@@ -1,4 +1,4 @@
-import Webgl2Api from "../util/Webgl2Api";
+import Webgl2Api from "./Webgl2Api";
 
 export default class WebglState2 {
     constructor(canvas) {

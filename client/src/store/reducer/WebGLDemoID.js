@@ -4,7 +4,8 @@ import {webglDemoID} from "../actions";
 import DemoCreator from "../../webgl/examples/DemoCreator";
 
 const demoList = [
-    {type: webglDemoID.GL_Pbr, moduleName: () => import("../../webgl/examples/GL_Pbr")}
+    {type: webglDemoID.GL_Pbr, moduleName: () => import("../../webgl/examples/GL_Pbr")},
+    {type: webglDemoID.GL_Pbr_Model, moduleName: () => import("../../webgl/examples/GL_Pbr_Model")}
 ];
 
 const WebGLDemoID = (state = {}, action) => {

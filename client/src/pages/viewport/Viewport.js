@@ -10,7 +10,7 @@ class Viewport extends React.Component {
     }
 
     componentDidMount() {
-        this.props.dispatch(updateWebGLDemo({id: webglDemoID.GL_Pbr, canvas: this.viewportRef.current}));
+        this.props.dispatch(updateWebGLDemo({id: webglDemoID.GL_Pbr_Model, canvas: this.viewportRef.current}));
     }
 
     render() {

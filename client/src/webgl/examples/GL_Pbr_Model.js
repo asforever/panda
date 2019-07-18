@@ -3,18 +3,19 @@ import {
     ShaderLib,
     CubeGeometry,
     QuadGeometry,
-    SphereGeometry
+    SphereGeometry, OBJLoader
 } from "../panda";
 
 import FileLoader from "../panda/util/loader/FileLoader";
-//import HDRLoader from "../../util/HDRLoader";
-
 import * as glm from "gl-matrix";
 
-export default class GL_Pbr {
+export default class GL_Pbr_Model {
 
     async setUp(canvas) {
-        const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);
+        const lantern = await new OBJLoader().load("./assets/model/lantern/lantern_obj.obj");
+        console.log(lantern);
+
+       /* const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);
         const albedoMap = new Uint8Array([255, 0, 0, 255]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/albedo.png", undefined, FileLoader.IMAGE);
         const aoMap = new Uint8Array([255]);// await new FileLoader().load("./assets/textures/pbr/rusted_iron/ao.png", undefined, FileLoader.IMAGE);
         const normalMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/normal.png", undefined, FileLoader.IMAGE);
@@ -40,7 +41,7 @@ export default class GL_Pbr {
 
         const cubeGeometry = new CubeGeometry();
         const quadGeometry = new QuadGeometry();
-        const sphereGeometry = new SphereGeometry(5,64,64);
+        const sphereGeometry = new SphereGeometry(5, 64, 64);
 
         const lightPositions = [
             glm.vec3.set(glm.vec3.create(), 0, 0, 30),
@@ -270,7 +271,7 @@ export default class GL_Pbr {
 
         for (let row = 0; row < rowLen; row++) {
 
-            metallicMap[0] = 255 / rowLen*row;
+            metallicMap[0] = 255 / rowLen * row;
             state.updateTexture2D({
                 textureBuffer: metallicTexture,
                 image: metallicMap,
@@ -284,7 +285,7 @@ export default class GL_Pbr {
             state.setTexture2D("metallicMap", metallicTexture, 6);
             let curModelPos = glm.vec3.scale(glm.vec3.create(), offsetH, row);
             for (let col = 0; col < colLen; col++) {
-                roughnessMap[0]  = 255 / colLen*col;
+                roughnessMap[0] = 255 / colLen * col;
                 state.updateTexture2D({
                     textureBuffer: roughnessTexture,
                     image: roughnessMap,
@@ -309,7 +310,7 @@ export default class GL_Pbr {
         state.setMat4("projection", cameraProjection);
         state.setTextureCube("environmentMap", envCubeMap, 0);
         state.setVao(cubeVAO);
-        state.drawElements(cubeGeometry.indices.data.length);
+        state.drawElements(cubeGeometry.indices.data.length);*/
     };
 
 }
