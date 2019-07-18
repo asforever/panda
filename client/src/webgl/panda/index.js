@@ -1,5 +1,6 @@
 import WebglState2 from "./core/WebglState2";
 
+import Geometry from "./geometry/Geometry";
 import CubeGeometry from "./geometry/CubeGeometry";
 import QuadGeometry from "./geometry/QuadGeometry";
 import SphereGeometry from "./geometry/SphereGeometry";
@@ -20,6 +21,7 @@ export {
     Vector3,
     GMath,
 
+    Geometry,
     CubeGeometry,
     QuadGeometry,
     SphereGeometry,

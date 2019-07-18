@@ -144,6 +144,13 @@ export default class WebglState2 {
         gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
     }
 
+    drawArray(vertexCount) {
+        const gl = this._gl;
+        const type = gl.TRIANGLES;
+        const offset = 0;
+        gl.drawArrays(type, offset, vertexCount);
+    }
+
 
     viewport(x, y, width, height) {
         this._gl.viewport(x, y, width, height);

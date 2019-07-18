@@ -1,5 +1,6 @@
 import FileLoader from "./FileLoader";
 import LoadState from "./LoadState";
+import MeshInfo from "./MeshInfo";
 
 export default class OBJLoader {
     async load(url) {
@@ -28,8 +29,8 @@ export default class OBJLoader {
 
         let lines = text.split('\n')
             , state = new LoadState()
-            , result = [];
-
+            , meshInfo = new MeshInfo(state)
+            , meshContainer = [];
 
         for (let i = 0, l = lines.length; i < l; i++) {
             let line = lines[i];
@@ -73,6 +74,8 @@ export default class OBJLoader {
                             parseFloat(data[2])
                         );
                         break;
+                    default:
+                        break;
                 }
             } else if (lineFirstChar === 'f') {
                 //面
@@ -98,10 +101,10 @@ export default class OBJLoader {
                     let v2 = faceVertices[j];
                     let v3 = faceVertices[j + 1];
                     //v indices , uvs indices ,normal indices
-                    state.addFace(
-                        v1[0], v2[0], v3[0],
-                        v1[1], v2[1], v3[1],
-                        v1[2], v2[2], v3[2]
+                    meshInfo.addFace(
+                        parseInt(v1[0]), parseInt(v2[0]), parseInt(v3[0]),
+                        parseInt(v1[1]), parseInt(v2[1]), parseInt(v3[1]),
+                        parseInt(v1[2]), parseInt(v2[2]), parseInt(v3[2])
                     );
 
                 }
@@ -128,19 +131,22 @@ export default class OBJLoader {
 
                 }
             } else if (lineFirstChar === 'p') {
-                let lineData = line.substr(1).trim();
-                let pointData = lineData.split(" ");
+                //let lineData = line.substr(1).trim();
+                //let pointData = lineData.split(" ");
             } else if (result !== null) {
                 //组
                 let name = (" " + result[0].substr(1).trim()).substr(1);
+                meshInfo = new MeshInfo(state);
+                meshInfo.name = name;
+                meshContainer.push(meshInfo);
 
             } else if (material_use_pattern.test(line)) {
             } else if (material_library_pattern.test(line)) {
             } else if (lineFirstChar === 's') {
-                result = line.split(' ');
-                if (result.length > 1) {
-                    let value = result[1].trim().toLowerCase();
-                }
+                //result = line.split(' ');
+                //if (result.length > 1) {
+                //    let value = result[1].trim().toLowerCase();
+                //}
             } else {
 
                 // Handle null terminated files without exception
@@ -150,7 +156,12 @@ export default class OBJLoader {
 
             }
         }
-
-        return state;
+        let resultContainer = [];
+        meshContainer.forEach(meshInfo => {
+            if (meshInfo.vertices.length > 0) {
+                resultContainer.push(meshInfo);
+            }
+        });
+        return resultContainer;
     }
 }
