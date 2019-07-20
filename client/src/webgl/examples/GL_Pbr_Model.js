@@ -13,6 +13,11 @@ import * as glm from "gl-matrix";
 import BufferAttribute from "../panda/geometry/BufferAttribute";
 
 export default class GL_Pbr_Model {
+    constructor() {
+        this.state = null;
+        this.modelView = glm.mat4.create();
+        this.geomeries = [];
+    }
 
     async setUp(canvas) {
         const lantern = await new OBJLoader().load("./assets/model/cerberus/Cerberus.obj");
@@ -20,10 +25,10 @@ export default class GL_Pbr_Model {
 
         const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);
         const albedoMap = await new FileLoader().load("./assets/model/cerberus/Cerberus_A.jpg", undefined, FileLoader.IMAGE);
-        const aoMap = new Uint8Array([125]);// await new FileLoader().load("./assets/textures/pbr/rusted_iron/ao.png", undefined, FileLoader.IMAGE);
+        const aoMap = new Uint8Array([255]);// await new FileLoader().load("./assets/textures/pbr/rusted_iron/ao.png", undefined, FileLoader.IMAGE);
         const normalMap = await new FileLoader().load("./assets/model/cerberus/Cerberus_N.jpg", undefined, FileLoader.IMAGE);
-        const metallicMap = new Uint8Array([0]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/metallic.png", undefined, FileLoader.IMAGE);
-        const roughnessMap = new Uint8Array([0]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/roughness.png", undefined, FileLoader.IMAGE);
+        const metallicMap = await new FileLoader().load("./assets/model/cerberus/Cerberus_M.jpg", undefined, FileLoader.IMAGE);
+        const roughnessMap = await new FileLoader().load("./assets/model/cerberus/Cerberus_R.jpg", undefined, FileLoader.IMAGE);
         //data
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -38,9 +43,9 @@ export default class GL_Pbr_Model {
             glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, 0, -1), glm.vec3.set(glm.vec3.create(), 0, -1, 0)),
         ];
 
-        const cameraProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 3, canvas.width / canvas.height, 0.1, 1000);
-        const cameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 0, 0, 200), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, -1, 0));
-        const cameraPos = [0, 0, 200];
+        const cameraProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 3, canvas.width / canvas.height, 0.1, 10);
+        const cameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 1.5, 0.5, -1.5), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, 1, 0));
+        const cameraPos = [1.5, 0.5, -1.5];
 
         const cubeGeometry = new CubeGeometry();
         const quadGeometry = new QuadGeometry();
@@ -78,15 +83,16 @@ export default class GL_Pbr_Model {
             glm.vec3.set(glm.vec3.create(), 30, -30, 30),
         ];
         const lightColors = [
-            glm.vec3.set(glm.vec3.create(), 300, 300, 300),
-            glm.vec3.set(glm.vec3.create(), 300, 300, 300),
-            glm.vec3.set(glm.vec3.create(), 300, 300, 300),
-            glm.vec3.set(glm.vec3.create(), 300, 300, 300)
+            glm.vec3.set(glm.vec3.create(), 300, 0, 300),
+            glm.vec3.set(glm.vec3.create(), 300, 0, 300),
+            glm.vec3.set(glm.vec3.create(), 300, 0, 300),
+            glm.vec3.set(glm.vec3.create(), 300, 0, 300)
         ];
 
         //ctx
-        const state = new WebglState2(canvas)
+        const state = this.state = new WebglState2(canvas)
             , gl = state.getContext();
+
         gl.getExtension('EXT_color_buffer_float');
         gl.enable(gl.CULL_FACE);
         gl.cullFace(gl.FRONT);
@@ -103,6 +109,7 @@ export default class GL_Pbr_Model {
 
         const captureRenderTarget = state.createRenderTarget(512, 512);
 
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         const albedoTexture = state.createTexture2D({
             image: albedoMap,
             width: 2048,
@@ -286,32 +293,39 @@ export default class GL_Pbr_Model {
         state.setTexture2D("aoMap", aoTexture, 5);
         state.setTexture2D("metallicMap", metallicTexture, 6);
         state.setTexture2D("roughnessMap", roughnessTexture, 7);
-        let modelView = glm.mat4.create();
+        state.setMat4("model", glm.mat4.create());
+        state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        modelVAOs.forEach((modelVAO, key) => this.geomeries.push({vao: modelVAO, geo: modelGeometries[key]}));
+        for (let i = 0; i < lightPositions.length; ++i) {
+            state.setVec3("lightPositions[" + i + "]", ...lightPositions[i]);
+            state.setVec3("lightColors[" + i + "]", ...lightColors[i]);
+        }
 
+        //state.use(backgroundProgramInfo.program);
+        //state.setMat4("view", cameraView);
+        //state.setMat4("projection", cameraProjection);
+        //state.setTextureCube("environmentMap", envCubeMap, 0);
+        //state.setVao(cubeVAO);
+        //state.drawElements(cubeGeometry.indices.data.length);
+//
+        this.animate();
+    };
 
-        //let translate = glm.vec3.set(glm.vec3.create(), 0, 10, 0);
-        //glm.mat4.translate(modelView, modelView, translate);
-        let axis = glm.vec3.set(glm.vec3.create(), 0, 1, 0);
-        glm.mat4.rotate(modelView, modelView, Math.PI/2, axis);
-        axis = glm.vec3.set(glm.vec3.create(), 1, 0, 0);
-        glm.mat4.rotate(modelView, modelView, Math.PI, axis);
-        glm.mat4.scale(modelView, modelView, [100,100,100]);
+    animate() {
+        let state = this.state;
+        let gl = state.getContext();
+        let modelView = this.modelView;
+        glm.mat4.rotate(modelView, modelView, Math.PI / 180, [0, 1, 0]);
         state.setMat4("model", modelView);
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        modelVAOs.forEach((modelVAO, key) => {
-            state.setVao(modelVAO);
-            let modelGeometry = modelGeometries[key];
-            state.drawArray(modelGeometry.attributes["position"].data.length / 3);
+
+        this.geomeries.forEach((geometry) => {
+            state.setVao(geometry.vao);
+            state.drawArray(geometry.geo.attributes["position"].data.length / 3);
         });
 
-
-       // state.use(backgroundProgramInfo.program);
-       // state.setMat4("view", cameraView);
-       // state.setMat4("projection", cameraProjection);
-       // state.setTextureCube("environmentMap", envCubeMap, 0);
-       // state.setVao(cubeVAO);
-       // state.drawElements(cubeGeometry.indices.data.length);
-    };
+        requestAnimationFrame(this.animate.bind(this))
+    }
 
 }
 
