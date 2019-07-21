@@ -1,13 +1,12 @@
 #version 300 es
-
 precision mediump  float;
-#define NORMAL_MAP
 
 out vec4 FragColor;
 in vec2 TexCoords;
 in vec3 WorldPos;
 in vec3 Normal;
 
+#define NORMAL_MAP
 // material parameters
 uniform sampler2D albedoMap;
 uniform sampler2D normalMap;

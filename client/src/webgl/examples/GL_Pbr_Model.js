@@ -11,6 +11,8 @@ import {
 import FileLoader from "../panda/util/loader/FileLoader";
 import * as glm from "gl-matrix";
 import BufferAttribute from "../panda/geometry/BufferAttribute";
+import ShaderChuck from "../panda/shaderLib/shaderChuck/ShaderChuck";
+import ShaderSource from "../panda/shaderLib/ShaderSource";
 
 export default class GL_Pbr_Model {
     constructor() {
@@ -20,15 +22,22 @@ export default class GL_Pbr_Model {
     }
 
     async setUp(canvas) {
-        const lantern = await new OBJLoader().load("./assets/model/cerberus/Cerberus.obj");
+        let shaderChuck = new ShaderChuck();
+        shaderChuck.setVersion(300);
+        shaderChuck.addAttributeIn("vec3","aPos");
+        shaderChuck.addAttributeIn("vec2","aTexCoords");
+        shaderChuck.addAttributeIn("vec3","aNormal");
+
+        const lantern = await new OBJLoader().load("./assets/model/lantern/lantern_obj.obj");
         console.log(lantern);
 
         const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);
-        const albedoMap = await new FileLoader().load("./assets/model/cerberus/Cerberus_A.jpg", undefined, FileLoader.IMAGE);
-        const aoMap = new Uint8Array([255]);// await new FileLoader().load("./assets/textures/pbr/rusted_iron/ao.png", undefined, FileLoader.IMAGE);
-        const normalMap = await new FileLoader().load("./assets/model/cerberus/Cerberus_N.jpg", undefined, FileLoader.IMAGE);
-        const metallicMap = await new FileLoader().load("./assets/model/cerberus/Cerberus_M.jpg", undefined, FileLoader.IMAGE);
-        const roughnessMap = await new FileLoader().load("./assets/model/cerberus/Cerberus_R.jpg", undefined, FileLoader.IMAGE);
+
+        const albedoMap = await new FileLoader().load("./assets/model/lantern/textures/lantern_Base_Color.jpg", undefined, FileLoader.IMAGE);
+        const aoMap = await new FileLoader().load("./assets/model/lantern/textures/lantern_Mixed_AO.jpg", undefined, FileLoader.IMAGE);
+        const normalMap = await new FileLoader().load("./assets/model/lantern/textures/lantern_Normal_OpenGL.jpg", undefined, FileLoader.IMAGE);
+        const metallicMap = await new FileLoader().load("./assets/model/lantern/textures/lantern_Metallic.jpg", undefined, FileLoader.IMAGE);
+        const roughnessMap = await new FileLoader().load("./assets/model/lantern/textures/lantern_Roughness.jpg", undefined, FileLoader.IMAGE);
         //data
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -43,9 +52,9 @@ export default class GL_Pbr_Model {
             glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, 0, -1), glm.vec3.set(glm.vec3.create(), 0, -1, 0)),
         ];
 
-        const cameraProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 3, canvas.width / canvas.height, 0.1, 10);
-        const cameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 1.5, 0.5, -1.5), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, 1, 0));
-        const cameraPos = [1.5, 0.5, -1.5];
+        const cameraProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 3, canvas.width / canvas.height, 0.1, 400);
+        const cameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 100, 100, 100), glm.vec3.set(glm.vec3.create(), 0, 50, 0), glm.vec3.set(glm.vec3.create(), 0, 1, 0));
+        const cameraPos = [100, 100, 100];
 
         const cubeGeometry = new CubeGeometry();
         const quadGeometry = new QuadGeometry();
@@ -118,7 +127,7 @@ export default class GL_Pbr_Model {
             format: gl.RGB,
             type: gl.UNSIGNED_BYTE
         });
-
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         const aoTexture = state.createTexture2D({
             image: aoMap,
             width: 1,
@@ -127,12 +136,14 @@ export default class GL_Pbr_Model {
             format: gl.LUMINANCE,
             type: gl.UNSIGNED_BYTE
         });
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         const normalTexture = state.createTexture2D({
             image: normalMap,
             internalFormat: gl.RGB,
             format: gl.RGB,
             type: gl.UNSIGNED_BYTE
         });
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         const metallicTexture = state.createTexture2D({
             image: metallicMap,
             width: 1,
@@ -141,6 +152,7 @@ export default class GL_Pbr_Model {
             format: gl.LUMINANCE,
             type: gl.UNSIGNED_BYTE
         });
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         const roughnessTexture = state.createTexture2D({
             image: roughnessMap,
             width: 1,
@@ -194,7 +206,7 @@ export default class GL_Pbr_Model {
 
 
         //program
-        const pbrSource = ShaderLib.pbr
+        const pbrSource = new ShaderSource().addDefine()
             , brdfSource = ShaderLib.brdf
             , backgroundSource = ShaderLib.background
             , prefilterSource = ShaderLib.prefilter
