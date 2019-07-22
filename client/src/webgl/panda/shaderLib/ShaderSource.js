@@ -1,7 +1,7 @@
 export default class ShaderSource {
     constructor() {
         this.version = "#version 300 es\n";
-        this.precision = "precision mediump  float;";
+        this.precision = "";
         this.defines = "";
         this.main = "";
     }
@@ -11,15 +11,19 @@ export default class ShaderSource {
     }
 
     setPrecision(precision) {
-        this.precision = "precision " + precision + " float\n";
+        this.precision = "precision " + precision + " float;\n";
+        return this;
     }
 
-    addDefine(name, value) {
-        this.defines += "#define " + name + value + "\n";
+    addDefine(name, value = "") {
+        this.defines += "#define " + name + value + ";\n";
+        return this;
     }
 
     addMain(shaderChuck) {
-        this.main += shaderChuck;
+        shaderChuck = shaderChuck.replace("#define GLSLIFY 1", "");
+        this.main = "\n" + shaderChuck;
+        return this;
     }
 
     getSource() {

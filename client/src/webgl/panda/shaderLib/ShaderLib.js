@@ -26,35 +26,36 @@ import irradiance_convolution_fs
     from '!raw-loader!glslify-loader!./irradiance_convolution/irradiance_convolution_fs.glsl';
 /* eslint import/no-webpack-loader-syntax: off */
 import prefilter_fs from '!raw-loader!glslify-loader!./prefilter/prefilter_fs.glsl';
+import ShaderSource from "./ShaderSource";
 
 const ShaderLib = {
     test: {
-        vs: test_vs,
-        fs: test_fs,
+        vs: new ShaderSource().addMain(test_vs),
+        fs: new ShaderSource().addMain(test_fs).setPrecision("mediump")
     },
     pbr: {
-        vs: pbr_vs,
-        fs: pbr_fs,
+        vs: new ShaderSource().addMain(pbr_vs),
+        fs: new ShaderSource().addMain(pbr_fs).setPrecision("mediump")
     },
     background: {
-        vs: background_vs,
-        fs: background_fs,
+        vs: new ShaderSource().addMain(background_vs),
+        fs: new ShaderSource().addMain(background_fs).setPrecision("mediump")
     },
     brdf: {
-        vs: brdf_vs,
-        fs: brdf_fs,
+        vs: new ShaderSource().addMain(brdf_vs),
+        fs: new ShaderSource().addMain(brdf_fs).setPrecision("mediump")
     },
     convert_2d_to_cubemap: {
-        vs: cube_map_vs,
-        fs: convert_2d_to_cubemap_fs,
+        vs: new ShaderSource().addMain(cube_map_vs),
+        fs: new ShaderSource().addMain(convert_2d_to_cubemap_fs).setPrecision("mediump")
     },
     irradiance_convolution: {
-        vs: cube_map_vs,
-        fs: irradiance_convolution_fs,
+        vs: new ShaderSource().addMain(cube_map_vs),
+        fs: new ShaderSource().addMain(irradiance_convolution_fs).setPrecision("mediump")
     },
     prefilter: {
-        vs: cube_map_vs,
-        fs: prefilter_fs,
+        vs: new ShaderSource().addMain(cube_map_vs),
+        fs: new ShaderSource().addMain(prefilter_fs).setPrecision("mediump")
     }
 };
 

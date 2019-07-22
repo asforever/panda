@@ -1,7 +1,3 @@
-#version 300 es
-
-precision mediump  float;
-
 out vec2 FragColor;
 in vec2 TexCoords;
 

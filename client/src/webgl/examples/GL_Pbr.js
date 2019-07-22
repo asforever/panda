@@ -161,12 +161,12 @@ export default class GL_Pbr {
             , toDToCubeMapSource = ShaderLib.convert_2d_to_cubemap
             , irrSource = ShaderLib.irradiance_convolution;
 
-        const pbrProgramInfo = state.createProgramInfo(pbrSource.vs, pbrSource.fs)
-            , brdfProgramInfo = state.createProgramInfo(brdfSource.vs, brdfSource.fs)
-            , backgroundProgramInfo = state.createProgramInfo(backgroundSource.vs, backgroundSource.fs)
-            , prefilterProgramInfo = state.createProgramInfo(prefilterSource.vs, prefilterSource.fs)
-            , toDToCubeMapProgramInfo = state.createProgramInfo(toDToCubeMapSource.vs, toDToCubeMapSource.fs)
-            , irrProgramInfo = state.createProgramInfo(irrSource.vs, irrSource.fs);
+        const pbrProgramInfo = state.createProgramInfo(pbrSource.vs.getSource(),  pbrSource.fs.getSource())
+            , brdfProgramInfo = state.createProgramInfo(brdfSource.vs.getSource(), brdfSource.fs.getSource())
+            , backgroundProgramInfo = state.createProgramInfo(backgroundSource.vs.getSource(), backgroundSource.fs.getSource())
+            , prefilterProgramInfo = state.createProgramInfo(prefilterSource.vs.getSource(), prefilterSource.fs.getSource())
+            , toDToCubeMapProgramInfo = state.createProgramInfo(toDToCubeMapSource.vs.getSource(), toDToCubeMapSource.fs.getSource())
+            , irrProgramInfo = state.createProgramInfo(irrSource.vs.getSource(), irrSource.fs.getSource());
 
         //state
         state.enableDepthTest(gl.DEPTH_TEST);

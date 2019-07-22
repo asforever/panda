@@ -4,15 +4,12 @@ import {
     Geometry,
     CubeGeometry,
     QuadGeometry,
-    SphereGeometry,
     OBJLoader
 } from "../panda";
 
 import FileLoader from "../panda/util/loader/FileLoader";
 import * as glm from "gl-matrix";
 import BufferAttribute from "../panda/geometry/BufferAttribute";
-import ShaderChuck from "../panda/shaderLib/shaderChuck/ShaderChuck";
-import ShaderSource from "../panda/shaderLib/ShaderSource";
 
 export default class GL_Pbr_Model {
     constructor() {
@@ -22,14 +19,7 @@ export default class GL_Pbr_Model {
     }
 
     async setUp(canvas) {
-        let shaderChuck = new ShaderChuck();
-        shaderChuck.setVersion(300);
-        shaderChuck.addAttributeIn("vec3","aPos");
-        shaderChuck.addAttributeIn("vec2","aTexCoords");
-        shaderChuck.addAttributeIn("vec3","aNormal");
-
         const lantern = await new OBJLoader().load("./assets/model/lantern/lantern_obj.obj");
-        console.log(lantern);
 
         const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);
 
@@ -58,7 +48,6 @@ export default class GL_Pbr_Model {
 
         const cubeGeometry = new CubeGeometry();
         const quadGeometry = new QuadGeometry();
-        const sphereGeometry = new SphereGeometry(5, 64, 64);
         const modelGeometries = [];
 
         lantern.objects.forEach((object => {
@@ -109,7 +98,6 @@ export default class GL_Pbr_Model {
 
         const cubeVAO = state.createVaoFromGeometry(cubeGeometry);
         const quadVAO = state.createVaoFromGeometry(quadGeometry);
-        const sphereVAO = state.createVaoFromGeometry(sphereGeometry);
         const modelVAOs = [];
         modelGeometries.forEach(modelGeometry => {
             modelVAOs.push(state.createVaoFromGeometry(modelGeometry));
@@ -206,19 +194,19 @@ export default class GL_Pbr_Model {
 
 
         //program
-        const pbrSource = new ShaderSource().addDefine()
+        const pbrSource = ShaderLib.pbr
             , brdfSource = ShaderLib.brdf
-            , backgroundSource = ShaderLib.background
+           // , backgroundSource = ShaderLib.background
             , prefilterSource = ShaderLib.prefilter
             , toDToCubeMapSource = ShaderLib.convert_2d_to_cubemap
             , irrSource = ShaderLib.irradiance_convolution;
 
-        const pbrProgramInfo = state.createProgramInfo(pbrSource.vs, pbrSource.fs)
-            , brdfProgramInfo = state.createProgramInfo(brdfSource.vs, brdfSource.fs)
-            , backgroundProgramInfo = state.createProgramInfo(backgroundSource.vs, backgroundSource.fs)
-            , prefilterProgramInfo = state.createProgramInfo(prefilterSource.vs, prefilterSource.fs)
-            , toDToCubeMapProgramInfo = state.createProgramInfo(toDToCubeMapSource.vs, toDToCubeMapSource.fs)
-            , irrProgramInfo = state.createProgramInfo(irrSource.vs, irrSource.fs);
+        const pbrProgramInfo = state.createProgramInfo(pbrSource.vs.getSource(),  pbrSource.fs.addDefine("NORMAL_MAP").getSource())
+            , brdfProgramInfo = state.createProgramInfo(brdfSource.vs.getSource(), brdfSource.fs.getSource())
+           // , backgroundProgramInfo = state.createProgramInfo(backgroundSource.vs.getSource(), backgroundSource.fs.getSource())
+            , prefilterProgramInfo = state.createProgramInfo(prefilterSource.vs.getSource(), prefilterSource.fs.getSource())
+            , toDToCubeMapProgramInfo = state.createProgramInfo(toDToCubeMapSource.vs.getSource(), toDToCubeMapSource.fs.getSource())
+            , irrProgramInfo = state.createProgramInfo(irrSource.vs.getSource(), irrSource.fs.getSource());
 
         //state
         state.enableDepthTest(gl.DEPTH_TEST);
