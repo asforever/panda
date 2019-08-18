@@ -32,7 +32,7 @@ const vec2 shadowoffset = vec2(0.07, -0.04);
 const float shadowsmoothness = 0.012;
 const float shadowint = 0.25;
 
-const float aawidth = 0.7;
+const float aawidth = 0.2;
 const int aasamples = 1;
 
 const bool showpoints = true;
