@@ -103,7 +103,11 @@ export default class WebglState2 {
         const uniformLocation = gl.getUniformLocation(this.curProgram, location);
         gl.uniform1f(uniformLocation, floatNum);
     }
-
+    setVec2(location,x,y){
+        const gl = this._gl;
+        const uniformLocation = gl.getUniformLocation(this.curProgram, location);
+        gl.uniform2fv(uniformLocation, [x, y]);
+    }
     setVec3(location, x, y, z) {
         const gl = this._gl;
         const uniformLocation = gl.getUniformLocation(this.curProgram, location);

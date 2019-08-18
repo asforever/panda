@@ -1,16 +1,20 @@
 import WebglState2 from "./core/WebglState2";
 
-import Geometry from "./geometry/Geometry";
-import CubeGeometry from "./geometry/CubeGeometry";
-import QuadGeometry from "./geometry/QuadGeometry";
-import SphereGeometry from "./geometry/SphereGeometry";
+import Object3D from "./Object3D/Object3D";
+import Mesh from "./Object3D/Mesh";
+import Geometry from "./Object3D/geometry/Geometry";
+import CubeGeometry from "./Object3D/geometry/CubeGeometry";
+import QuadGeometry from "./Object3D/geometry/QuadGeometry";
+import SphereGeometry from "./Object3D/geometry/SphereGeometry";
+import Material from "./Object3D/material/Material";
 
 import Vector3 from "./math/Vector3";
 import GMath from "./math/GMath";
 
 import ShaderLib from "./shaderLib/ShaderLib";
 
-import OBJLoader from "./util/loader/OBJLoader";
+import OBJLoader from "./loader/OBJLoader";
+import ParseStateObject3DMediator from "./mediator/ParseStateObject3DMediator";
 
 
 
@@ -21,12 +25,17 @@ export {
     Vector3,
     GMath,
 
+    Object3D,
+    Mesh,
+    Material,
     Geometry,
     CubeGeometry,
     QuadGeometry,
     SphereGeometry,
 
-    OBJLoader
+    OBJLoader,
+
+    ParseStateObject3DMediator,
 };
 
 

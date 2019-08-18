@@ -1,26 +1,32 @@
 import {
     WebglState2,
     ShaderLib,
-    Geometry,
     CubeGeometry,
     QuadGeometry,
-    OBJLoader
+    ParseStateObject3DMediator,
+    OBJLoader, Object3D
 } from "../panda";
 
-import FileLoader from "../panda/util/loader/FileLoader";
+import FileLoader from "../panda/loader/FileLoader";
 import * as glm from "gl-matrix";
-import BufferAttribute from "../panda/geometry/BufferAttribute";
 
 export default class GL_Pbr_Model {
     constructor() {
         this.state = null;
         this.modelView = glm.mat4.create();
-        this.geomeries = [];
+        this.opaqueMeshesInfo = [];
+        this.transparentMeshesInfo = [];
+        this.bookMeshInfo = {};
+        this.pbrMap = null;
+        this.captureRenderTarget = null;
+        this.canvas = null;
+        this.programs = {};
     }
 
-    async setUp(canvas) {
-        const lantern = await new OBJLoader().load("./assets/model/lantern/lantern_obj.obj");
 
+    async setUp(canvas) {
+        this.canvas = canvas;
+        const lantern = await new OBJLoader().load("./assets/model/lantern/lantern_obj.obj");
         const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);
 
         const albedoMap = await new FileLoader().load("./assets/model/lantern/textures/lantern_Base_Color.jpg", undefined, FileLoader.IMAGE);
@@ -43,44 +49,27 @@ export default class GL_Pbr_Model {
         ];
 
         const cameraProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 3, canvas.width / canvas.height, 0.1, 400);
-        const cameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 100, 100, 100), glm.vec3.set(glm.vec3.create(), 0, 50, 0), glm.vec3.set(glm.vec3.create(), 0, 1, 0));
-        const cameraPos = [100, 100, 100];
+        const cameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 80, 80, 80), glm.vec3.set(glm.vec3.create(), 0, 50, 0), glm.vec3.set(glm.vec3.create(), 0, 1, 0));
+        const cameraPos = [80, 80, 80];
+
+        const bookCamera = glm.mat4.perspective(glm.mat4.create(), Math.PI / 2, canvas.width / canvas.height, 0.1, 10);
+        const bookCameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 0, 0, 0.5), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, 1, 0));
 
         const cubeGeometry = new CubeGeometry();
         const quadGeometry = new QuadGeometry();
-        const modelGeometries = [];
+        const bookGeometry = new QuadGeometry(canvas.width / canvas.height, 1);
 
-        lantern.objects.forEach((object => {
-            let geometry = object.geometry;
-            if (geometry.vertices.length === 0) return;
+        let modelObject3D = new ParseStateObject3DMediator().parse(new Object3D(), lantern);
 
-            let modelGeometry = new Geometry();
-            modelGeometry.addAttribute("position", new BufferAttribute({
-                name: "position",
-                data: new Float32Array(geometry.vertices),
-                componentNum: 3
-            }), 3);
-            modelGeometry.addAttribute("uv", new BufferAttribute({
-                name: "uv",
-                data: new Float32Array(geometry.uvs),
-                componentNum: 2
-            }), 3);
-            modelGeometry.addAttribute("normal", new BufferAttribute({
-                name: "normal",
-                data: new Float32Array(geometry.normals),
-                componentNum: 3
-            }), 3);
-            modelGeometries.push(modelGeometry);
-        }));
-
-
-        const lightPositions = [
-            glm.vec3.set(glm.vec3.create(), 0, 0, 30),
+        const pointLightPositions = [
+            glm.vec3.set(glm.vec3.create(), 0, 0, 0),
+            glm.vec3.set(glm.vec3.create(), -30, 30, 30),
             glm.vec3.set(glm.vec3.create(), 30, 30, 30),
             glm.vec3.set(glm.vec3.create(), -30, -30, 30),
             glm.vec3.set(glm.vec3.create(), 30, -30, 30),
         ];
-        const lightColors = [
+        const pointLightColors = [
+            glm.vec3.set(glm.vec3.create(), 20000, 2000, 0),
             glm.vec3.set(glm.vec3.create(), 300, 0, 300),
             glm.vec3.set(glm.vec3.create(), 300, 0, 300),
             glm.vec3.set(glm.vec3.create(), 300, 0, 300),
@@ -98,13 +87,24 @@ export default class GL_Pbr_Model {
 
         const cubeVAO = state.createVaoFromGeometry(cubeGeometry);
         const quadVAO = state.createVaoFromGeometry(quadGeometry);
-        const modelVAOs = [];
-        modelGeometries.forEach(modelGeometry => {
-            modelVAOs.push(state.createVaoFromGeometry(modelGeometry));
+        const bookVAO = state.createVaoFromGeometry(bookGeometry);
+
+        modelObject3D.children.forEach((mesh, key) => {
+            let meshInfo = {
+                vao: state.createVaoFromGeometry(mesh.geometry),
+                indexLen: mesh.geometry.attributes["position"].data.length / 3
+            };
+
+            if (mesh.name !== "glass lantern") {
+                this.opaqueMeshesInfo.push(meshInfo);
+            } else {
+                this.transparentMeshesInfo.push(meshInfo);
+            }
+
         });
 
 
-        const captureRenderTarget = state.createRenderTarget(512, 512);
+        const captureRenderTarget = this.captureRenderTarget = state.createRenderTarget(512, 512);
 
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         const albedoTexture = state.createTexture2D({
@@ -192,21 +192,35 @@ export default class GL_Pbr_Model {
             width: 512, height: 512,
         });
 
+        const pbrMap = this.pbrMap = state.createTexture2D({
+            internalFormat: gl.RGBA16F,
+            format: gl.RGBA,
+            type: gl.FLOAT,
+            width: canvas.width, height: canvas.height,
+        });
+
 
         //program
         const pbrSource = ShaderLib.pbr
             , brdfSource = ShaderLib.brdf
-           // , backgroundSource = ShaderLib.background
+            // , backgroundSource = ShaderLib.background
             , prefilterSource = ShaderLib.prefilter
             , toDToCubeMapSource = ShaderLib.convert_2d_to_cubemap
-            , irrSource = ShaderLib.irradiance_convolution;
+            , irrSource = ShaderLib.irradiance_convolution
+            , book = ShaderLib.book;
 
-        const pbrProgramInfo = state.createProgramInfo(pbrSource.vs.getSource(),  pbrSource.fs.addDefine("NORMAL_MAP").getSource())
-            , brdfProgramInfo = state.createProgramInfo(brdfSource.vs.getSource(), brdfSource.fs.getSource())
-           // , backgroundProgramInfo = state.createProgramInfo(backgroundSource.vs.getSource(), backgroundSource.fs.getSource())
-            , prefilterProgramInfo = state.createProgramInfo(prefilterSource.vs.getSource(), prefilterSource.fs.getSource())
-            , toDToCubeMapProgramInfo = state.createProgramInfo(toDToCubeMapSource.vs.getSource(), toDToCubeMapSource.fs.getSource())
-            , irrProgramInfo = state.createProgramInfo(irrSource.vs.getSource(), irrSource.fs.getSource());
+        const pbrProgramInfo = state.createProgramInfo(
+            pbrSource.vs.getSource()
+            , pbrSource.fs
+                .addDefine("NORMAL_MAP")
+                .addDefine("POINT_LIGHT_NUMBER", 5)
+                .getSource()),
+            brdfProgramInfo = state.createProgramInfo(brdfSource.vs.getSource(), brdfSource.fs.getSource()),
+            // , backgroundProgramInfo = state.createProgramInfo(backgroundSource.vs.getSource(), backgroundSource.fs.getSource()),
+            prefilterProgramInfo = state.createProgramInfo(prefilterSource.vs.getSource(), prefilterSource.fs.getSource()),
+            toDToCubeMapProgramInfo = state.createProgramInfo(toDToCubeMapSource.vs.getSource(), toDToCubeMapSource.fs.getSource()),
+            irrProgramInfo = state.createProgramInfo(irrSource.vs.getSource(), irrSource.fs.getSource()),
+            bookProgramInfo = state.createProgramInfo(book.vs.getSource(), book.fs.getSource());
 
         //state
         state.enableDepthTest(gl.DEPTH_TEST);
@@ -282,9 +296,11 @@ export default class GL_Pbr_Model {
         state.use(pbrProgramInfo.program);
         state.viewport(0, 0, canvas.width, canvas.height);
 
+
         state.setMat4("projection", cameraProjection);
         state.setMat4("view", cameraView);
         state.setVec3("camPos", ...cameraPos);
+        state.setFloat("opacity", 1);
         state.setTextureCube("irradianceMap", irradianceMap, 0);
         state.setTextureCube("prefilterMap", prefilterMap, 1);
         state.setTexture2D("brdfLUT", brdfMap, 2);
@@ -295,10 +311,9 @@ export default class GL_Pbr_Model {
         state.setTexture2D("roughnessMap", roughnessTexture, 7);
         state.setMat4("model", glm.mat4.create());
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        modelVAOs.forEach((modelVAO, key) => this.geomeries.push({vao: modelVAO, geo: modelGeometries[key]}));
-        for (let i = 0; i < lightPositions.length; ++i) {
-            state.setVec3("lightPositions[" + i + "]", ...lightPositions[i]);
-            state.setVec3("lightColors[" + i + "]", ...lightColors[i]);
+        for (let i = 0; i < pointLightPositions.length; ++i) {
+            state.setVec3("pointLightPositions[" + i + "]", ...pointLightPositions[i]);
+            state.setVec3("pointLightColors[" + i + "]", ...pointLightColors[i]);
         }
 
         //state.use(backgroundProgramInfo.program);
@@ -308,23 +323,78 @@ export default class GL_Pbr_Model {
         //state.setVao(cubeVAO);
         //state.drawElements(cubeGeometry.indices.data.length);
 //
+        state.viewport(0, 0, canvas.width, canvas.height);
+        state.use(bookProgramInfo.program);
+
+        state.setMat4("view", bookCameraView);
+        state.setMat4("projection", bookCamera);
+        state.setMat4("model", glm.mat4.create());
+        state.setFloat("ratio", bookGeometry.width / bookGeometry.height);
+        state.setFloat("iTime", new Date().getTime());
+        state.setFloat("width", bookGeometry.width);
+        state.setFloat("height", bookGeometry.height);
+        state.setTexture2D("iChannel0", hdrMap, 0);
+        state.setTexture2D("iChannel1", pbrMap, 1);
+        state.setFloat("ratio", bookGeometry.width / bookGeometry.height);
+        state.setVec2("mouse", 0.001, 0.001);
+        this.bookMeshInfo = {
+            vao: bookVAO,
+            indexLen: bookGeometry.indices.data.length
+        };
+
+        //program
+        this.programs = {
+            pbr: pbrProgramInfo.program,
+            book: bookProgramInfo.program,
+        };
+
+
+        //animate
+        window.addEventListener("mousemove", (e) => {
+            state.setVec2("mouse", Math.max(e.clientX * bookGeometry.width / window.innerWidth,0.001), (1 - e.clientY / window.innerHeight) * bookGeometry.height);
+        });
         this.animate();
     };
 
     animate() {
         let state = this.state;
         let gl = state.getContext();
-        let modelView = this.modelView;
-        glm.mat4.rotate(modelView, modelView, Math.PI / 180, [0, 1, 0]);
-        state.setMat4("model", modelView);
+        if (!this.canvas) return;
+
+        //draw pbr model
+        state.use(this.programs.pbr);
+        state.resizeRenderTarget(this.captureRenderTarget, this.canvas.width, this.canvas.height);
+        state.setRenderTarget(this.captureRenderTarget, this.pbrMap);
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        this.geomeries.forEach((geometry) => {
-            state.setVao(geometry.vao);
-            state.drawArray(geometry.geo.attributes["position"].data.length / 3);
+        glm.mat4.rotate( this.modelView,  this.modelView, Math.PI / 180, [0, 1, 0]);
+        state.setMat4("model",  this.modelView);
+        this.opaqueMeshesInfo.forEach((meshInfo) => {
+            gl.disable(gl.BLEND);
+            state.setVao(meshInfo.vao);
+            state.setFloat("opacity", 1.0);
+            state.drawArray(meshInfo.indexLen);
+        });
+        this.transparentMeshesInfo.forEach((meshInfo) => {
+            gl.enable(gl.BLEND);
+            gl.blendEquation(gl.FUNC_ADD);
+            gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
+
+            gl.cullFace(gl.FRONT);
+
+            state.setVao(meshInfo.vao);
+            state.setFloat("opacity", 0.8);
+            state.drawArray(meshInfo.indexLen);
         });
 
-        requestAnimationFrame(this.animate.bind(this))
+        state.unBindRenderTarget();
+
+        //draw pbr book
+        state.use(this.programs.book);
+        state.setVao(this.bookMeshInfo.vao);
+        state.drawElements(this.bookMeshInfo.indexLen);
+
+        requestAnimationFrame(this.animate.bind(this));
     }
 
 }

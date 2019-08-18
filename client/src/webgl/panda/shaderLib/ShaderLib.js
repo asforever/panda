@@ -2,29 +2,17 @@
 import test_vs from '!raw-loader!glslify-loader!./test/test_vs.glsl';
 import test_fs from '!raw-loader!glslify-loader!./test/test_fs.glsl';
 
-import pbr_vs from '!raw-loader!glslify-loader!./pbr/pbr_vs.glsl';
-/* eslint import/no-webpack-loader-syntax: off */
+import common_vs from '!raw-loader!glslify-loader!./common/common_vs.glsl';
+import book_fs from '!raw-loader!glslify-loader!./book/book_fs.glsl';
+
 import pbr_fs from '!raw-loader!glslify-loader!./pbr/pbr_fs.glsl';
-
-/* eslint import/no-webpack-loader-syntax: off */
 import background_vs from '!raw-loader!glslify-loader!./background/background_vs.glsl';
-/* eslint import/no-webpack-loader-syntax: off */
 import background_fs from '!raw-loader!glslify-loader!./background/background_fs.glsl';
-
-/* eslint import/no-webpack-loader-syntax: off */
 import brdf_vs from '!raw-loader!glslify-loader!./brdf/brdf_vs.glsl';
-/* eslint import/no-webpack-loader-syntax: off */
 import brdf_fs from '!raw-loader!glslify-loader!./brdf/brdf_fs.glsl';
-
-/* eslint import/no-webpack-loader-syntax: off */
 import cube_map_vs from '!raw-loader!glslify-loader!./cubeMap/cube_map_vs.glsl';
-/* eslint import/no-webpack-loader-syntax: off */
 import convert_2d_to_cubemap_fs from '!raw-loader!glslify-loader!./convert_2d_to_cubemap/convert_2d_to_cubemap_fs.glsl';
-
-/* eslint import/no-webpack-loader-syntax: off */
-import irradiance_convolution_fs
-    from '!raw-loader!glslify-loader!./irradiance_convolution/irradiance_convolution_fs.glsl';
-/* eslint import/no-webpack-loader-syntax: off */
+import irradiance_convolution_fs from '!raw-loader!glslify-loader!./irradiance_convolution/irradiance_convolution_fs.glsl';
 import prefilter_fs from '!raw-loader!glslify-loader!./prefilter/prefilter_fs.glsl';
 import ShaderSource from "./ShaderSource";
 
@@ -33,9 +21,13 @@ const ShaderLib = {
         vs: new ShaderSource().addMain(test_vs),
         fs: new ShaderSource().addMain(test_fs).setPrecision("mediump")
     },
+    book: {
+        vs: new ShaderSource().addMain(common_vs),
+        fs: new ShaderSource().addMain(book_fs).setPrecision("mediump")
+    },
     pbr: {
-        vs: new ShaderSource().addMain(pbr_vs),
-        fs: new ShaderSource().addMain(pbr_fs).setPrecision("mediump")
+        vs: new ShaderSource().addMain(common_vs),
+        fs: new ShaderSource().addMain(pbr_fs).setPrecision("mediump").addDefine("POINT_LIGHT_NUMBER",4)
     },
     background: {
         vs: new ShaderSource().addMain(background_vs),

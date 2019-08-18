@@ -2,8 +2,10 @@ export default class ShaderSource {
     constructor() {
         this.version = "#version 300 es\n";
         this.precision = "";
-        this.defines = "";
         this.main = "";
+        this.define = "";
+
+        this.defineMap = {};
     }
 
     setVersion(version) {
@@ -16,7 +18,16 @@ export default class ShaderSource {
     }
 
     addDefine(name, value = "") {
-        this.defines += "#define " + name + value + ";\n";
+        let defineMap = this.defineMap;
+
+        if (defineMap[name] === value) return this;
+
+        this.define = "";
+        defineMap[name] = value;
+        for (let defineMapKey in defineMap) {
+            this.define += "#define " + defineMapKey + " " + defineMap[defineMapKey] + "\n";
+        }
+
         return this;
     }
 
@@ -29,7 +40,7 @@ export default class ShaderSource {
     getSource() {
         return this.version
             + this.precision
-            + this.defines
+            + this.define
             + this.main;
     }
 }

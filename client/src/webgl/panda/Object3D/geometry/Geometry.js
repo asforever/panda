@@ -1,4 +1,4 @@
-import GMath from "../math/GMath"
+import GMath from "../../math/GMath"
 
 export default class Geometry {
     constructor() {

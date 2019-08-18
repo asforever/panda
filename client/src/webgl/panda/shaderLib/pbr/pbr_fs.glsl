@@ -9,6 +9,7 @@ uniform sampler2D normalMap;
 uniform sampler2D metallicMap;
 uniform sampler2D roughnessMap;
 uniform sampler2D aoMap;
+uniform float opacity;
 
 
 // IBL
@@ -17,8 +18,8 @@ uniform samplerCube prefilterMap;
 uniform sampler2D brdfLUT;
 
 // lights
-uniform vec3 lightPositions[4];
-uniform vec3 lightColors[4];
+uniform vec3 pointLightPositions[POINT_LIGHT_NUMBER];
+uniform vec3 pointLightColors[POINT_LIGHT_NUMBER];
 
 uniform vec3 camPos;
 
@@ -113,11 +114,11 @@ void main()
     for(int i = 0; i < 4; ++i)
     {
         // calculate per-light radiance
-        vec3 L = normalize(lightPositions[i] - WorldPos);
+        vec3 L = normalize(pointLightPositions[i] - WorldPos);
         vec3 H = normalize(V + L);
-        float distance = length(lightPositions[i] - WorldPos);
+        float distance = length(pointLightPositions[i] - WorldPos);
         float attenuation = 1.0 / (distance * distance);
-        vec3 radiance = lightColors[i] * attenuation;
+        vec3 radiance = pointLightColors[i] * attenuation * opacity;
 
         // Cook-Torrance BRDF
         float NDF = DistributionGGX(N, H, roughness);
@@ -141,9 +142,10 @@ void main()
 
         // scale light by NdotL
         float NdotL = max(dot(N, L), 0.0);
+        float VdotL = pow(max(dot(-V, L), 0.0),3.);
 
         // add to outgoing radiance Lo
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+        Lo += (kD * albedo / PI + specular) * radiance * NdotL+(1.0-opacity)*radiance*VdotL; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }
 
     // ambient lighting (we now use IBL as the ambient term)
@@ -164,12 +166,12 @@ void main()
 
     vec3 ambient = (kD * diffuse + specular) * ao;
 
-    vec3 color = ambient + Lo;
+    vec3 color =  ambient + Lo;
 
     // HDR tonemapping
     color = color / (color + vec3(1.0));
     // gamma correct
     color = pow(color, vec3(1.0/2.2));
 
-    FragColor = vec4(color,1.0);
+    FragColor = vec4(color,opacity);
 }

@@ -6,7 +6,7 @@ import {
     SphereGeometry
 } from "../panda";
 
-import FileLoader from "../panda/util/loader/FileLoader";
+import FileLoader from "../panda/loader/FileLoader";
 //import HDRLoader from "../../util/HDRLoader";
 
 import * as glm from "gl-matrix";
@@ -246,6 +246,7 @@ export default class GL_Pbr {
         state.setMat4("projection", cameraProjection);
         state.setMat4("view", cameraView);
         state.setVec3("camPos", ...cameraPos);
+        state.setFloat("opacity", 1.);
         state.setTextureCube("irradianceMap", irradianceMap, 0);
         state.setTextureCube("prefilterMap", prefilterMap, 1);
         state.setTexture2D("brdfLUT", brdfMap, 2);
@@ -264,8 +265,8 @@ export default class GL_Pbr {
         let offsetV = glm.vec3.set(glm.vec3.create(), 0, space, 0);
 
         for (let i = 0; i < lightPositions.length; ++i) {
-            state.setVec3("lightPositions[" + i + "]", ...lightPositions[i]);
-            state.setVec3("lightColors[" + i + "]", ...lightColors[i]);
+            state.setVec3("pointLightPositions[" + i + "]", ...lightPositions[i]);
+            state.setVec3("pointLightColors[" + i + "]", ...lightColors[i]);
         }
 
         for (let row = 0; row < rowLen; row++) {
