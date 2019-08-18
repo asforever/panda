@@ -4,11 +4,15 @@ export default class GL_Book {
         this.pages = [];
     }
 
-    run(){
-        if(this.pages.length)return;
+    setSize(width,height){
+
     }
 
-    addPage(){
+    setMouse(x,y){
 
+    }
+
+    addPages(pages) {
+        this.pages = pages;
     }
 }
