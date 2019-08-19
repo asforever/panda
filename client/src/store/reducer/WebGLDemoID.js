@@ -5,7 +5,8 @@ import DemoCreator from "../../webgl/examples/DemoCreator";
 
 const demoList = [
     {type: webglDemoID.GL_Pbr, moduleName: () => import("../../webgl/examples/GL_Pbr")},
-    {type: webglDemoID.GL_Pbr_Model, moduleName: () => import("../../webgl/examples/GL_Pbr_Model")}
+    {type: webglDemoID.GL_Pbr_Model, moduleName: () => import("../../webgl/examples/GL_Pbr_Model")},
+    {type: webglDemoID.GL_Book, moduleName: () => import("../../webgl/examples/book/GL_Book")}
 ];
 
 const WebGLDemoID = (state = {}, action) => {

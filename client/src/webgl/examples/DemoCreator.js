@@ -12,6 +12,6 @@ export default class DemoCreator {
         if (this.lastDemo === _demo) return;
         if (this.lastDemo) this.lastDemo.dispose();
         this.lastDemo = _demo;
-        this.lastDemo.setUp(canvas);
+        this.lastDemo.run(canvas);
     }
 }

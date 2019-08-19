@@ -13,7 +13,7 @@ import * as glm from "gl-matrix";
 
 export default class GL_Pbr {
 
-    async setUp(canvas) {
+    async run(canvas) {
         const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);
         const albedoMap = new Uint8Array([255, 0, 0, 255]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/albedo.png", undefined, FileLoader.IMAGE);
         const aoMap = new Uint8Array([255]);// await new FileLoader().load("./assets/textures/pbr/rusted_iron/ao.png", undefined, FileLoader.IMAGE);

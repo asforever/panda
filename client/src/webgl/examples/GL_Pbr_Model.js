@@ -24,7 +24,7 @@ export default class GL_Pbr_Model {
     }
 
 
-    async setUp(canvas) {
+    async run(canvas) {
         this.canvas = canvas;
         const lantern = await new OBJLoader().load("./assets/model/lantern/lantern_obj.obj");
         const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);

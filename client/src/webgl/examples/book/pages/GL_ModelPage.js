@@ -1,7 +1,7 @@
 import FileLoader from "../../../panda/loader/FileLoader";
 import GL_Page from "./GL_Page";
 
-export default class GL_PbrPage extends GL_Page{
+export default class GL_ModelPage extends GL_Page{
     constructor(state) {
         super();
         this.state = state;
@@ -10,7 +10,7 @@ export default class GL_PbrPage extends GL_Page{
 
     async loadTexture() {
         if (!this.texture) {
-            const hdrEnvMap = await new FileLoader().load("./assets/model/lantern/textures/lantern_Base_Color.jpg", undefined, FileLoader.IMAGE);
+            const hdrEnvMap = await new FileLoader().load("./assets/model/lantern/textures/lantern_Mixed_AO.jpg", undefined, FileLoader.IMAGE);
 
             const state = this.state, gl = state.getContext();
             this.texture = state.createTexture2D({
