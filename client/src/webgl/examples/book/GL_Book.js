@@ -1,8 +1,8 @@
-import {QuadGeometry, ShaderLib, WebglState2} from "../../panda";
-import * as glm from "gl-matrix";
+import {QuadGeometry, ShaderLib, Vector2, WebglState2} from "../../panda";
 import GL_TitlePage from "./pages/GL_TitlePage";
 import GL_PbrPage from "./pages/GL_PbrPage";
 import GL_ModelPage from "./pages/GL_ModelPage";
+import * as glm from "gl-matrix";
 
 export default class GL_Book {
     constructor() {
@@ -10,7 +10,7 @@ export default class GL_Book {
         this.canvas = null;
         this.curPage = 0;
         this.state = null;
-        this.downPoint = glm.vec2.create();
+        this.downPoint = new Vector2();
 
         this.pages = [];
         this.meshInfo = {};
@@ -101,8 +101,16 @@ export default class GL_Book {
 
 
     onDown = (e) => {
-        this.isDown = !this.isAnimate;
-        //glm.vec2.set(this.downPoint,)
+        if(this.isAnimate) return;
+
+        this.downPoint.set(e.clientX, e.clientY);
+        const inRight = this.canvas.clientWidth / e.clientX < 2;
+        if(inRight && this.curPage < this.pages.length - 2){
+           // this.usePage(this.curPage + 1);
+            this.isDown = true;
+        }else if(this.curPage>0){
+            this.isDown = true;
+        }
     };
 
     onMove = (e) => {
@@ -112,23 +120,24 @@ export default class GL_Book {
     };
 
     onUp = (e) => {
-        this.isDown = false;
-        if (this.canvas.width - e.clientX < 0.01
-            && this.canvas.height - e.clientY < 0.01) {
-            this.usePage(this.curPage + 1);
-        }
+        if(this.isAnimate) return;
 
-        if (e.clientX < 0.01
-            && e.clientY < 0.01) {
-            this.usePage(this.curPage - 1);
-        }
+       //this.isDown = false;
+       //if (this.canvas.width - e.clientX < 0.01
+       //    && this.canvas.height - e.clientY < 0.01) {
+       //    this.usePage(this.curPage + 1);
+       //}
+
+       //if (e.clientX < 0.01
+       //    && e.clientY < 0.01) {
+       //    this.usePage(this.curPage - 1);
+       //}
     };
 
     onResize = (e) => {
         const state = this.state;
         const aspect = this.canvas.width / this.canvas.height;
         this.camera = glm.mat4.perspective(glm.mat4.create(), Math.PI / 2, aspect, 0.1, 10);
-        this.setSize(aspect, 1);
         state.setMat4("view", this.camera);
     };
 
@@ -147,6 +156,7 @@ export default class GL_Book {
         state.setTexture2D("iChannel0", this.pages[page].getTexture(), 0);
         state.setTexture2D("iChannel1", this.pages[page + 1].getTexture(), 1);
         state.setVec2("mouse", 0, 0);
+        //this.draw();
     }
 
     draw() {

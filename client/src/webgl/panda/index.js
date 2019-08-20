@@ -9,6 +9,7 @@ import SphereGeometry from "./Object3D/geometry/SphereGeometry";
 import Material from "./Object3D/material/Material";
 
 import Vector3 from "./math/Vector3";
+import Vector2 from "./math/Vector2";
 import GMath from "./math/GMath";
 
 import ShaderLib from "./shaderLib/ShaderLib";
@@ -23,6 +24,7 @@ export {
     ShaderLib,
 
     Vector3,
+    Vector2,
     GMath,
 
     Object3D,

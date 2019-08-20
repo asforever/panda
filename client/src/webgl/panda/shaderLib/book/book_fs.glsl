@@ -96,8 +96,8 @@ vec4 turnPage(vec2 fragCoord,vec2 uv)
     mouse2.x = width - mouse.x;
     #endif
 
-    mouse2.x = min(mouse2.x,ratio);
-    mouse2.y = min(sqrt(pow(ratio/2.,2.) - pow(mouse2.x - ratio/2.,2.)),mouse2.y);
+    mouse2.x = max(min(mouse2.x,ratio),0.001);
+    mouse2.y = max(min(sqrt(pow(ratio/2.,2.) - pow(mouse2.x - ratio/2.,2.)),mouse2.y),0.001);
 
 
     if (mouse2.x==0. && mouse2.y==0. && anim)
