@@ -1,7 +1,7 @@
 import * as glm from "gl-matrix";
 
 export default class Vector2 {
-    constructor(x, y) {
+    constructor(x = 0, y = 0) {
         this.data = glm.vec2.set(glm.vec2.create(), x, y);
     }
 
@@ -15,6 +15,15 @@ export default class Vector2 {
 
     set(x, y) {
         glm.vec2.set(this.data, x, y);
+    }
+
+    add(vec2) {
+        glm.vec2.add(this.data, this.data, vec2.data);
+    }
+
+
+    sub(vec2) {
+        glm.vec2.sub(this.data, this.data, vec2.data);
     }
 
     distanceTo(vec2) {

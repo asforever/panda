@@ -6,13 +6,16 @@ import * as glm from "gl-matrix";
 
 export default class GL_Book {
     static Tolerance = 0.01;
+    static ToNextPage = "animate to next";
+    static ToLastPage = "animate to last";
+    static Stop = "stop";
 
     constructor() {
         //att
         this.canvas = null;
         this.curPageIndex = 0;
         this.state = null;
-        this.downPoint = new Vector2();
+        this.mousePoint = new Vector2();
 
         this.width = 1;
         this.height = 1;
@@ -22,7 +25,7 @@ export default class GL_Book {
         this.camera = null;
 
         //state
-        this.isAnimate = false;
+        this.animateState = GL_Book.Stop;
         this.isDown = false;
 
     }
@@ -105,72 +108,64 @@ export default class GL_Book {
         this.canvas.addEventListener("mouseup", this.onUp, false);
 
         window.addEventListener("resize", this.onResize, false);
+
+        this.animate();
     }
 
+    updateMouse() {
+        this.state.setVec2("mouse", this.mousePoint.x, 0, this.height.y);
+        this.draw();
+    }
+
+    animate() {
+        if (this.animateState === GL_Book.ToLastPage){
+            if(this.mousePoint.x > 0){
+                this.mousePoint.sub(new Vector2(0.001, 0.001));
+                this.updateMouse();
+            }else{
+                this.animateState = GL_Book.Stop;
+            }
+        }
+
+        if (this.animateState === GL_Book.ToNextPage){
+            console.log( this.mousePoint);
+            if(this.mousePoint.x < this.canvas.clientWidth){
+                this.mousePoint.add(new Vector2(0.001, 0.001));
+                this.updateMouse();
+            }else{
+                this.animateState = GL_Book.Stop;
+            }
+        }
+
+        requestAnimationFrame(this.animate.bind(this))
+    }
 
     onDown = (e) => {
-        if (this.isAnimate) return;
-        this.isDown = true;
-        this.downPoint.set(e.clientX, e.clientY);
+        const isLeft = this.canvas.clientWidth / e.clientX >2;
+        if (this.animateState !== GL_Book.Stop) return;
 
-        const leftBottom = new Vector2(0, this.height);
-        const inLeftBottom = leftBottom.distanceTo(this.downPoint) / this.height < GL_Book.Tolerance;
-
-        if (inLeftBottom) {
-            this.usePage(this.curPageIndex - 1);
+        if (isLeft) {
+            if (this.curPageIndex > 0) {
+                this.mousePoint.set(0, this.height);
+                this.usePage(this.curPageIndex - 1);
+                this.updateMouse();
+                this.animateState = GL_Book.ToLastPage;
+            }
         } else {
-
+            this.animateState = GL_Book.ToNextPage;
         }
-        //    // this.usePage(this.curPageIndex + 1);
-//
-        //} else if (this.curPageIndex > 0) {
-        //    this.isDown = true;
-        //}
+
     };
 
     onMove = (e) => {
-        if (!this.isDown) return;
-        const ratio = this.width / this.height;
-        this.setMouse(ratio * e.clientX / window.innerWidth, (1 - e.clientY / window.innerHeight));
     };
 
     onUp = (e) => {
-        const leftBottom = new Vector2(0, this.height);
-        const upPoint = new Vector2(e.clientX, e.clientY);
-        const inLeftBottom = leftBottom.distanceTo(upPoint) / this.height < GL_Book.Tolerance;
-
-        if (inLeftBottom) {
-            this.usePage(this.curPageIndex + 1);
-        } else {
-
-        }
-        this.isDown = false;
     };
 
     onResize = (e) => {
-
-        const state = this.state;
-        const aspect = this.width / this.height;
-        this.canvas.width = this.width = this.canvas.clientWidth;
-        this.canvas.height = this.height = this.canvas.clientHeight;
-
-        this.camera = glm.mat4.perspective(glm.mat4.create(), Math.PI / 2, aspect, 0.1, 10);
-        this.meshInfo.geometry.resetSize(aspect, 1);
-
-        state.viewport(0, 0, this.width, this.height);
-        state.setFloat("height", 1);
-        state.setFloat("width", aspect);
-        state.setFloat("ratio", aspect);
-        state.setMat4("projection", this.camera);
-        state.updateVaoFromGeometry(this.meshInfo.vao, this.meshInfo.geometry);
-        state.setVao(this.meshInfo.vao);
-        this.draw();
     };
 
-    setMouse(x, y) {
-        this.state.setVec2("mouse", x, y);
-        this.draw();
-    }
 
     addPages(pages) {
         this.pages = pages;
