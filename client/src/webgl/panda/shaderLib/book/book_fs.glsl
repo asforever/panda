@@ -39,7 +39,7 @@ const bool showpoints = true;
 const bool colors = false;
 const bool anim = true;
 
-//#define swap_x
+#define swap_x
 
 // Simple "random" function
 float random(float co)
@@ -116,15 +116,11 @@ vec4 turnPage(vec2 fragCoord,vec2 uv)
     float mdist = distance(fragCoord, mpoint);
     float angle = atan(mpoint.y/mpoint.x);
 
-    vec2 uv2 = uv;
-    #ifdef swap_xs
-    uv2.x = ratio - uv2.x;
-    #endif
-    vec2 uvr = rotateVec(uv2 -  midmpointUV, angle);
+    vec2 uvr = rotateVec(uv -  midmpointUV, angle);
     float midBottomX = length(midmpointUV)/cos(-angle);
 
-    float curl = pow(ratio/2. - midBottomX,1.)+0.001;
-    curl = min(mouse.x,curl);
+    float curl = pow(ratio/2. - midBottomX, 1.);
+    curl *=pow(length(mpoint),4.);
 
     float e = curl * (e0*pow(mdist/height, 2.) + 0.02*e0*smoothstep(0., 0.12, mdist/height));
     float pagefunc = pageFunction(uvr.x, e);
@@ -133,10 +129,6 @@ vec4 turnPage(vec2 fragCoord,vec2 uv)
 
     vec2 uvr2b = vec2(-pagefunc, uvr.y);
     vec2 uvr3b = rotateVec(uvr2b, -angle) - vec2(1., -1.)*midmpointUV;
-
-    #ifdef swap_x
-    uvr3b.x = ratio - uvr3b.x;
-    #endif
 
     vec4 i;
     // Turned page
@@ -156,7 +148,7 @@ vec4 turnPage(vec2 fragCoord,vec2 uv)
             // Top of the turned page
         	float mdists = distance(fragCoord, mpoint)*0.7 - 55.;
         	float es = e0*pow(mdists/height, 2.) + 0.02*e0*smoothstep(0., 0.08, mdist/height);
-        	vec2 uvrs = rotateVec(uv2 -midmpointUV - shadowoffset, angle);
+        	vec2 uvrs = rotateVec(uv -midmpointUV - shadowoffset, angle);
         	float pagefuncs = pageFunction(uvrs.x + 0.015, es - 0.001);
         	vec2 uvr2s = vec2(pagefuncs, uvrs.y);
         	vec2 uvr3s = rotateVec(uvr2s, -angle) - vec2(1., -1.)*midmpointUV;
@@ -164,10 +156,8 @@ vec4 turnPage(vec2 fragCoord,vec2 uv)
 
             float difft = intfac*(1. - ambientt) + ambientt;
         	difft = difft*(shadow*shadowint + 1. - shadowint)/2. + mix(1. - shadowint, difft, shadow)/2.;
-            if (firstcycle)
-                i = difft*(colors?vec4(1., 0.3, 0.3, 1.):texture(iChannel0, mod((uvr3b - uvrcorr3)/vec2(-ratio, 1.), 1.)));
-            else
-                i = difft*(colors?vec4(1., 0.3, 0.3, 1.):texture(iChannel1, mod((uvr3b - uvrcorr3)/vec2(-ratio, 1.), 1.)));
+            i = texture(iChannel0, mod((uvr3b - uvrcorr3)/vec2(-ratio, 1.), 1.));
+
 
         }
         else
@@ -232,6 +222,11 @@ void main()
 	float ratio =width/height;
 	vec2 fragCoord = TexCoords*vec2(width,height);
 	vec2 uv = vec2(TexCoords.x*ratio,TexCoords.y);
+
+    #ifdef swap_x
+    uv.x = ratio - uv.x;
+    fragCoord.x = width - fragCoord.x;
+    #endif
 
     // Antialiasing
     vec4 vs = vec4(0.);

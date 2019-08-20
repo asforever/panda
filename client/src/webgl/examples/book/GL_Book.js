@@ -5,12 +5,17 @@ import GL_ModelPage from "./pages/GL_ModelPage";
 import * as glm from "gl-matrix";
 
 export default class GL_Book {
+    static Tolerance = 0.01;
+
     constructor() {
         //att
         this.canvas = null;
         this.curPage = 0;
         this.state = null;
         this.downPoint = new Vector2();
+
+        this.width = 1;
+        this.height = 1;
 
         this.pages = [];
         this.meshInfo = {};
@@ -34,6 +39,8 @@ export default class GL_Book {
 
     initContext(canvas) {
         this.canvas = canvas;
+        this.width = this.canvas.width;
+        this.height = this.canvas.height;
         this.state = new WebglState2(canvas)
     }
 
@@ -69,6 +76,7 @@ export default class GL_Book {
         const bookSource = ShaderLib.book;
         const bookProgramInfo = state.createProgramInfo(bookSource.vs.getSource(), bookSource.fs.getSource());
 
+        const ratio = bookGeometry.width / bookGeometry.height;
         state.viewport(0, 0, canvas.width, canvas.height);
         state.use(bookProgramInfo.program);
         state.setMat4("view", bookCameraView);
@@ -80,8 +88,8 @@ export default class GL_Book {
         state.setFloat("height", bookGeometry.height);
         state.setTexture2D("iChannel0", this.pages[this.curPage].getTexture(), 0);
         state.setTexture2D("iChannel1", this.pages[this.curPage + 1].getTexture(), 1);
-        state.setFloat("ratio", bookGeometry.width / bookGeometry.height);
-        state.setVec2("mouse", 0, 0);
+        state.setFloat("ratio", ratio);
+        state.setVec2("mouse", ratio, 0);
         state.setVao(bookVAO);
         this.meshInfo = {
             vao: bookVAO,
@@ -101,42 +109,47 @@ export default class GL_Book {
 
 
     onDown = (e) => {
-        if(this.isAnimate) return;
-
+        if (this.isAnimate) return;
+        this.isDown = true;
         this.downPoint.set(e.clientX, e.clientY);
-        const inRight = this.canvas.clientWidth / e.clientX < 2;
-        if(inRight && this.curPage < this.pages.length - 2){
-           // this.usePage(this.curPage + 1);
-            this.isDown = true;
-        }else if(this.curPage>0){
-            this.isDown = true;
+
+        const leftBottom = new Vector2(0, this.height);
+        const inLeftBottom = leftBottom.distanceTo(this.downPoint) / this.height < GL_Book.Tolerance;
+
+        if (inLeftBottom && this.curPage > 0&&this.curPage<this.pages.length-2) {
+            this.usePage(this.curPage - 1);
+        }else{
+
         }
+        //    // this.usePage(this.curPage + 1);
+//
+        //} else if (this.curPage > 0) {
+        //    this.isDown = true;
+        //}
     };
 
     onMove = (e) => {
         if (!this.isDown) return;
-        const ratio = this.canvas.width / this.canvas.height;
+        const ratio = this.width / this.height;
         this.setMouse(ratio * e.clientX / window.innerWidth, (1 - e.clientY / window.innerHeight));
     };
 
     onUp = (e) => {
-        if(this.isAnimate) return;
+        const leftBottom = new Vector2(0, this.height);
+        const upPoint = new Vector2(e.clientX, e.clientY);
+        const inLeftBottom = leftBottom.distanceTo(upPoint) / this.height < GL_Book.Tolerance;
 
-       //this.isDown = false;
-       //if (this.canvas.width - e.clientX < 0.01
-       //    && this.canvas.height - e.clientY < 0.01) {
-       //    this.usePage(this.curPage + 1);
-       //}
+        if (inLeftBottom && this.curPage < this.pages.length - 2) {
+            this.usePage(this.curPage + 1);
+        }else{
 
-       //if (e.clientX < 0.01
-       //    && e.clientY < 0.01) {
-       //    this.usePage(this.curPage - 1);
-       //}
+        }
+        this.isDown = false;
     };
 
     onResize = (e) => {
         const state = this.state;
-        const aspect = this.canvas.width / this.canvas.height;
+        const aspect = this.width / this.height;
         this.camera = glm.mat4.perspective(glm.mat4.create(), Math.PI / 2, aspect, 0.1, 10);
         state.setMat4("view", this.camera);
     };
