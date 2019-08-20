@@ -86,6 +86,16 @@ export default class WebglState2 {
         return Webgl2Api.createVaoAndBindAttributes(this._gl, filterAttributes, geometry.indices);
     }
 
+    updateVaoFromGeometry(vao, geometry) {
+        const filterAttributes = [];
+        const attributes = geometry.attributes;
+        Object.keys(attributes).forEach((key, index) => {
+            if ((1 << index) & geometry.attributesCode) filterAttributes.push(attributes[key]);
+        });
+
+        return Webgl2Api.updateVao(this._gl, vao, filterAttributes, geometry.indices);
+    }
+
     //config
     use(program) {
         this.curProgram = program;

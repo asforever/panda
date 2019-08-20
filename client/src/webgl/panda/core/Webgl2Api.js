@@ -99,22 +99,32 @@ export default class Webgl2Api {
     static createVaoAndBindAttributes(gl, attributes, indices) {
 
         const vao = gl.createVertexArray();
+        this.updateVao(gl, vao,attributes, indices);
+        return vao;
+    }
+    static updateVao(gl, vao,attributes, indices){
         gl.bindVertexArray(vao);
-
+        const buffers = [];
         attributes.forEach((attribute, attributeKey) => {
             const buffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
             gl.bufferData(gl.ARRAY_BUFFER, attribute.data, gl.STATIC_DRAW);
             gl.vertexAttribPointer(attributeKey, attribute.componentNum, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(attributeKey);
+            buffers.push(buffer);
         });
         if (indices) {
             const buffer = gl.createBuffer();
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices.data, gl.STATIC_DRAW);
+            buffers.push(buffer);
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         gl.bindVertexArray(null);
+
+        buffers.forEach(buffer=>{
+            gl.deleteBuffer(buffer);
+        });
         return vao;
     }
 
