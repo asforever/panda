@@ -112,27 +112,49 @@ export default class GL_Book {
         this.animate();
     }
 
+
+    addPages(pages) {
+        this.pages = pages;
+    }
+
+    usePage(page) {
+        const state = this.state;
+        const curPage = this.pages[page] ? this.pages[page].getTexture() : null;
+        const nextPage = this.pages[page + 1] ? this.pages[page + 1].getTexture() : null;
+
+        this.curPageIndex = page;
+        state.setTexture2D("iChannel0", curPage, 0);
+        state.setTexture2D("iChannel1", nextPage, 1);
+        state.setVec2("mouse", 0, 0);
+        //this.draw();
+    }
+
     updateMouse() {
-        this.state.setVec2("mouse", this.mousePoint.x, 0, this.height.y);
+        this.state.setVec2("mouse", this.mousePoint.x, this.height.y);
         this.draw();
     }
 
+    draw() {
+        let state = this.state;
+        state.drawElements(this.meshInfo.indexLen);
+    }
+
     animate() {
-        if (this.animateState === GL_Book.ToLastPage){
-            if(this.mousePoint.x > 0){
+        if (this.animateState === GL_Book.ToLastPage) {
+            if (this.mousePoint.x > 0) {
                 this.mousePoint.sub(new Vector2(0.001, 0.001));
                 this.updateMouse();
-            }else{
+            } else {
                 this.animateState = GL_Book.Stop;
             }
         }
 
-        if (this.animateState === GL_Book.ToNextPage){
-            console.log( this.mousePoint);
-            if(this.mousePoint.x < this.canvas.clientWidth){
+        if (this.animateState === GL_Book.ToNextPage) {
+            console.log(this.mousePoint);
+            if (this.mousePoint.x < this.canvas.clientWidth) {
                 this.mousePoint.add(new Vector2(0.001, 0.001));
                 this.updateMouse();
-            }else{
+            } else {
                 this.animateState = GL_Book.Stop;
             }
         }
@@ -141,7 +163,7 @@ export default class GL_Book {
     }
 
     onDown = (e) => {
-        const isLeft = this.canvas.clientWidth / e.clientX >2;
+        const isLeft = this.canvas.clientWidth / e.clientX > 2;
         if (this.animateState !== GL_Book.Stop) return;
 
         if (isLeft) {
@@ -165,29 +187,6 @@ export default class GL_Book {
 
     onResize = (e) => {
     };
-
-
-    addPages(pages) {
-        this.pages = pages;
-    }
-
-    usePage(page) {
-        const state = this.state;
-        const curPage = this.pages[page] ? this.pages[page].getTexture() : null;
-        const nextPage = this.pages[page + 1] ? this.pages[page + 1].getTexture() : null;
-
-        this.curPageIndex = page;
-        state.setTexture2D("iChannel0", curPage, 0);
-        state.setTexture2D("iChannel1", nextPage, 1);
-        state.setVec2("mouse", 0, 0);
-        //this.draw();
-    }
-
-    draw() {
-        let state = this.state;
-        state.drawElements(this.meshInfo.indexLen);
-    }
-
 
     dispose() {
         this.canvas.removeEventListener("mousedown", this.onDown);
