@@ -136,7 +136,7 @@ export default class Webgl2Api {
             , realFormat = format || gl.RGBA;
 
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        if (width && height > -1) {
+        if (width>-1 && height > -1) {
             gl.texImage2D(gl.TEXTURE_2D, level, realInternalFormat, width, height, 0, realFormat, realType, image);
         } else {
             gl.texImage2D(gl.TEXTURE_2D, level, realInternalFormat, realFormat, realType, image);

@@ -2,11 +2,6 @@ import FileLoader from "../../../panda/loader/FileLoader";
 import GL_Page from "./GL_Page";
 
 export default class GL_ModelPage extends GL_Page{
-    constructor(state) {
-        super();
-        this.state = state;
-        this.texture = null;
-    }
 
     async loadTexture() {
         if (!this.texture) {
@@ -27,9 +22,6 @@ export default class GL_ModelPage extends GL_Page{
 
     getTexture() {
         return this.texture;
-    }
-
-    run() {
     }
 
 }

@@ -1,4 +1,7 @@
 import WebglState2 from "./core/WebglState2";
+import Mesh_GL from "./core/Mesh_GL";
+import Texture2D_GL from "./core/Texture2D_GL";
+import RenderTarget_GL from "./core/RenderTarget_GL";
 
 import Object3D from "./Object3D/Object3D";
 import Mesh from "./Object3D/Mesh";
@@ -14,6 +17,7 @@ import GMath from "./math/GMath";
 
 import ShaderLib from "./shaderLib/ShaderLib";
 
+import FileLoader from "./loader/FileLoader";
 import OBJLoader from "./loader/OBJLoader";
 import ParseStateObject3DMediator from "./mediator/ParseStateObject3DMediator";
 
@@ -22,6 +26,9 @@ import ParseStateObject3DMediator from "./mediator/ParseStateObject3DMediator";
 export {
     WebglState2,
     ShaderLib,
+    RenderTarget_GL,
+    Texture2D_GL,
+    Mesh_GL,
 
     Vector3,
     Vector2,
@@ -35,6 +42,7 @@ export {
     QuadGeometry,
     SphereGeometry,
 
+    FileLoader,
     OBJLoader,
 
     ParseStateObject3DMediator,

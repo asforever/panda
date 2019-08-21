@@ -1,6 +1,13 @@
 export default class GL_Page {
 
-    run() {
+    constructor(state, width, height) {
+        this.state = state;
+        this.texture = null;
+        this.width = width;
+        this.height = height;
+    }
+
+    update() {
     }
 
     dispose() {

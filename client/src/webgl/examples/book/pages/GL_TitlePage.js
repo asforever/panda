@@ -2,11 +2,6 @@ import FileLoader from "../../../panda/loader/FileLoader";
 import GL_Page from "./GL_Page";
 
 export default class GL_TitlePage extends GL_Page{
-    constructor(state) {
-        super();
-        this.state = state;
-        this.texture = null;
-    }
 
     async loadTexture() {
         if (!this.texture) {
@@ -15,8 +10,6 @@ export default class GL_TitlePage extends GL_Page{
             const state = this.state, gl = state.getContext();
             this.texture = state.createTexture2D({
                 image: hdrEnvMap,
-                //width: hdrEnvMap.width,
-                //height: hdrEnvMap.height,
                 internalFormat: gl.RGBA16F,
                 format: gl.RGBA,
                 type: gl.FLOAT
@@ -27,9 +20,6 @@ export default class GL_TitlePage extends GL_Page{
 
     getTexture() {
         return this.texture;
-    }
-
-    run() {
     }
 
 }
