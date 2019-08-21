@@ -97,8 +97,7 @@ vec4 turnPage(vec2 fragCoord,vec2 uv)
     #endif
 
     mouse2.x = max(min(mouse2.x,ratio),0.001);
-    mouse2.y = max(min(sqrt(pow(ratio/2.,2.) - pow(mouse2.x - ratio/2.,2.)),mouse2.y),0.001);
-
+    mouse2.y = max(min(sqrt(pow(ratio/2.,2.) - pow(mouse2.x - ratio/2.,2.)),mouse2.y),0.0002);
 
     if (mouse2.x==0. && mouse2.y==0. && anim)
     {
@@ -120,7 +119,7 @@ vec4 turnPage(vec2 fragCoord,vec2 uv)
     float midBottomX = length(midmpointUV)/cos(-angle);
 
     float curl = pow(ratio/2. - midBottomX, 1.);
-    curl *=pow(length(mpoint),4.);
+    //curl *=pow(length(mpoint),4.);
 
     float e = curl * (e0*pow(mdist/height, 2.) + 0.02*e0*smoothstep(0., 0.12, mdist/height));
     float pagefunc = pageFunction(uvr.x, e);
