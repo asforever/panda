@@ -119,12 +119,11 @@ export default class GL_Book {
 
     usePage(page) {
         const state = this.state;
-        const ratio= this.width/this.height;
+        const ratio = this.width / this.height;
         const curPage = this.pages[page] ? this.pages[page].getTexture() : null;
         const nextPage = this.pages[page + 1] ? this.pages[page + 1].getTexture() : null;
 
         this.curPageIndex = page;
-        this.mousePoint.set(this.width/this.height, 0);
         state.setTexture2D("iChannel0", curPage, 0);
         state.setTexture2D("iChannel1", nextPage, 1);
         state.setVec2("mouse", ratio, 0);
@@ -143,14 +142,15 @@ export default class GL_Book {
     animate() {
         const width = this.canvas.clientWidth;
         const ratio = this.width / this.height;
-        let dW  = Math.sin(Math.PI*this.mousePoint.x/width+0.01);
-        let dH  = Math.cos(dW)/1000;
+        let dW = Math.sin(Math.PI * this.mousePoint.x / width + 0.01) * 5.;
+        let dH = 0;
 
         if (this.animateState === GL_Book.ToLastPage) {
-            if (this.mousePoint.x < width) {
+            if (this.mousePoint.x < ratio) {
                 this.mousePoint.add(new Vector2(dW, dH));
                 this.updateMouse();
-                this.draw()
+                this.draw();
+                console.log(this.mousePoint.y);
             } else {
                 this.animateState = GL_Book.Stop;
             }
@@ -159,14 +159,18 @@ export default class GL_Book {
         if (this.animateState === GL_Book.ToNextPage) {
             if (this.mousePoint.x > 0) {
                 const neg = ratio / 2 > this.mousePoint.x ? 1 : -1;
-                this.mousePoint.sub(new Vector2(dW, neg*dH));
+                this.mousePoint.sub(new Vector2(dW, neg * dH));
                 this.updateMouse();
                 this.draw();
 
 
             } else {
+                console.log(this.curPageIndex)
+                if (this.curPageIndex < this.pages.length-2){
+                    this.usePage(this.curPageIndex + 1);
+                }
                 this.animateState = GL_Book.Stop;
-                this.usePage(this.curPageIndex+1);
+
             }
         }
 
@@ -179,12 +183,14 @@ export default class GL_Book {
 
         if (isLeft) {
             if (this.curPageIndex > 0) {
-                this.usePage(this.curPageIndex - 1);
                 this.mousePoint.set(0, 0);
                 this.updateMouse();
+                if((this.curPageIndex < this.pages.length-2))this.usePage(this.curPageIndex - 1);
                 this.animateState = GL_Book.ToLastPage;
             }
         } else {
+            this.mousePoint.set(this.width / this.height, 0);
+            this.updateMouse();
             this.animateState = GL_Book.ToNextPage;
         }
 
