@@ -1,39 +1,45 @@
+import * as glm from "gl-matrix";
+
 export default class Vector3 {
-    constructor(x, y, z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+    constructor(x = 0, y = 0, z = 0) {
+        this.data = glm.vec3.set(glm.vec3.create(), x, y, z);
     }
 
-    convertToArray() {
-        return [this.x, this.y, this.z];
+    get x() {
+        return this.data[0];
     }
 
-    length() {
-
-        return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
-
+    get y() {
+        return this.data[1];
     }
 
-    multiplyScalar(scalar) {
+    get z() {
+        return this.data[2];
+    }
 
-        this.x *= scalar;
-        this.y *= scalar;
-        this.z *= scalar;
 
+    set(x, y, z) {
+        glm.vec3.set(this.data, x, y, z);
+    }
+
+    add(vec3) {
+        glm.vec3.add(this.data, this.data, vec3.data);
+    }
+
+
+    sub(vec3) {
+        glm.vec3.sub(this.data, this.data, vec3.data);
+    }
+
+    distanceTo(vec3) {
+        const result = glm.vec3.sub(glm.vec3.create(), this.data, vec3.data);
+        return glm.vec3.length(result);
+    }
+
+    normalize(){
+        glm.vec3.normalize(this.data,this.data);
         return this;
     }
 
-    divideScalar(scalar) {
 
-        return this.multiplyScalar(1 / scalar);
-
-    }
-
-    normalize() {
-
-        return this.divideScalar(this.length() || 1);
-
-    }
-    
 }

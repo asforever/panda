@@ -1,4 +1,4 @@
-import {QuadGeometry, ShaderLib, Vector2, WebglState2} from "../../panda";
+import {Mesh_GL, QuadGeometry, ShaderLib, Vector2, WebglState2} from "../../panda";
 import GL_TitlePage from "./pages/GL_TitlePage";
 import GL_PbrPage from "./pages/GL_PbrPage";
 import GL_ModelPage from "./pages/GL_ModelPage";
@@ -51,12 +51,14 @@ export default class GL_Book {
     async initPages() {
         const width = this.width, height = this.height;
         const titlePage = new GL_TitlePage(this.state, width, height);
-        const pbrPage = new GL_PbrPage(this.state, width, height);
-        const modelPage = new GL_ModelPage(this.state, width, height);
-        const nullPage = new GL_NullPage(this.state, width, height);
         await titlePage.loadTexture();
+
+        const pbrPage = new GL_PbrPage(this.state, width, height);
         await pbrPage.loadTexture();
+
+        const modelPage = new GL_ModelPage(this.state, width, height);
         await modelPage.loadTexture();
+        const nullPage = new GL_NullPage(this.state, width, height);
         await nullPage.loadTexture();
 
         const pages = [
@@ -98,11 +100,11 @@ export default class GL_Book {
         state.setFloat("ratio", ratio);
         state.setVec2("mouse", ratio, 0);
         state.setVao(bookVAO);
-        this.meshInfo = {
+        this.meshInfo = new Mesh_GL({
+            program: bookProgramInfo.program,
             vao: bookVAO,
             geometry: bookGeometry,
-            indexLen: bookGeometry.indices.data.length
-        };
+        });
     }
 
 
@@ -125,6 +127,7 @@ export default class GL_Book {
     usePage(page) {
         const state = this.state;
         const ratio = this.width / this.height;
+
         const curPage = this.pages[page] ? this.pages[page].getTexture() : null;
         const nextPage = this.pages[page + 1] ? this.pages[page + 1].getTexture() : null;
 
@@ -132,6 +135,7 @@ export default class GL_Book {
         state.setTexture2D("iChannel0", curPage, 0);
         state.setTexture2D("iChannel1", nextPage, 1);
         state.setVec2("mouse", ratio, 0);
+
         this.draw();
     }
 
@@ -140,15 +144,21 @@ export default class GL_Book {
     }
 
     draw() {
-        let state = this.state;
-        state.drawElements(this.meshInfo.indexLen);
+        const state = this.state,gl = state.getContext();
+       // this.pages[this.curPageIndex].update();
+
+        gl.cullFace(gl.BACK);
+        state.use(this.meshInfo.program);
+        state.setVao(this.meshInfo.vao);
+        state.drawElements(this.meshInfo.geometry.indices.data.length);
+
     }
 
     animate() {
         const width = this.canvas.clientWidth;
         const ratio = this.width / this.height;
-        let dW = Math.sin(Math.PI * this.mousePoint.x / width + 0.01);
-        let dH = 0;
+        let dW = Math.sin(Math.PI * this.mousePoint.x / width + 0.01)*2.;
+        let dH = 0.003;
 
         if (this.animateState === GL_Book.ToLastPage) {
             if (this.mousePoint.x < ratio) {
@@ -170,7 +180,6 @@ export default class GL_Book {
 
             }
         }
-
         this.draw();
         requestAnimationFrame(this.animate.bind(this))
     }

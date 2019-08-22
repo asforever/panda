@@ -21,7 +21,7 @@ export default class GL_PbrPage extends GL_Page {
     async loadTexture() {
         if (!this.texture) {
             const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);
-            const albedoMap = new Uint8Array([255, 0, 0, 255]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/albedo.png", undefined, FileLoader.IMAGE);
+            const albedoMap = new Uint8Array([255, 255, 255, 255]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/albedo.png", undefined, FileLoader.IMAGE);
             const aoMap = new Uint8Array([255]);// await new FileLoader().load("./assets/textures/pbr/rusted_iron/ao.png", undefined, FileLoader.IMAGE);
             const normalMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/normal.png", undefined, FileLoader.IMAGE);
             const metallicMap = new Uint8Array([255]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/metallic.png", undefined, FileLoader.IMAGE);
@@ -38,8 +38,8 @@ export default class GL_PbrPage extends GL_Page {
                 glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, 0, -1), glm.vec3.set(glm.vec3.create(), 0, -1, 0)),
             ];
 
-            const cameraProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 3, this.width / this.height, 0.1, 100);
-            const cameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 30, 0, 70), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, -1, 0));
+            const cameraProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 3, this.width / this.height, 0.1, 300);
+            const cameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 30, 0, 100), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, -1, 0));
             const cameraPos = [30, 0, 70];
 
             const cubeGeometry = new CubeGeometry();
@@ -249,14 +249,15 @@ export default class GL_PbrPage extends GL_Page {
             state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             state.drawElements(quadGeometry.indices.data.length);
             state.unBindRenderTarget();
+            state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
             gl.cullFace(gl.FRONT);
             //pbr
-            state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
 
             state.use(pbrProgramInfo.program);
             state.resizeRenderTarget(captureRenderTarget, this.width, this.height);
-            state.setRenderTarget(captureRenderTarget, this.texture);
+           // state.setRenderTarget(captureRenderTarget, this.texture);
             state.viewport(0, 0, this.width, this.height);
             state.setVao(sphereVAO);
 
@@ -272,7 +273,6 @@ export default class GL_PbrPage extends GL_Page {
             state.setTexture2D("aoMap", aoTexture, 5);
 
 
-
             for (let i = 0; i < lightPositions.length; ++i) {
                 state.setVec3("pointLightPositions[" + i + "]", ...lightPositions[i]);
                 state.setVec3("pointLightColors[" + i + "]", ...lightColors[i]);
@@ -281,7 +281,7 @@ export default class GL_PbrPage extends GL_Page {
             state.use(backgroundProgramInfo.program);
             state.setMat4("view", cameraView);
             state.setMat4("projection", cameraProjection);
-            state.setTextureCube("environmentMap", envCubeMap, 6);
+            state.setTextureCube("environmentMap", envCubeMap);
 
             this.sphereMeshInfo = new Mesh_GL({
                 program: pbrProgramInfo.program,
@@ -291,7 +291,7 @@ export default class GL_PbrPage extends GL_Page {
                     "metallicMap": new Texture2D_GL({textureGL: metallicTexture, image: metallicMap}),
                     "roughnessMap": new Texture2D_GL({textureGL: roughnessTexture, image: roughnessMap})
                 },
-                renderTarget:new RenderTarget_GL({target:captureRenderTarget,texture:this.texture})
+                renderTarget: new RenderTarget_GL({target: captureRenderTarget, texture: this.texture})
             });
 
             this.backgroundMeshInfo = new Mesh_GL({
@@ -301,9 +301,7 @@ export default class GL_PbrPage extends GL_Page {
             });
 
 
-
             this.update();
-
 
 
         }
@@ -314,7 +312,8 @@ export default class GL_PbrPage extends GL_Page {
         return this.texture;
     }
 
-    drawSpheres() {
+
+    update() {
         const state = this.state
             , gl = state.getContext()
             , sphereMeshInfo = this.sphereMeshInfo
@@ -325,10 +324,14 @@ export default class GL_PbrPage extends GL_Page {
             , rowLen = 6
             , colLen = 6;
 
-        state.use(sphereMeshInfo.program);
-        state.setRenderTarget(renderTarget.target, renderTarget.texture);
-        state.setVao(sphereVAO);
 
+        state.setRenderTarget(renderTarget.target, renderTarget.texture);
+        state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        gl.enable(gl.CULL_FACE);
+        gl.cullFace(gl.FRONT);
+        state.use(sphereMeshInfo.program);
+        state.setVao(sphereVAO);
         const space = sphereMeshInfo.geometry.radius;
         const metallicMap = textures["metallicMap"].image;
         const metallicTexture = textures["metallicMap"].textureGL;
@@ -336,13 +339,14 @@ export default class GL_PbrPage extends GL_Page {
         const roughnessTexture = textures["roughnessMap"].textureGL;
 
         let model = glm.mat4.create();
-        glm.mat4.translate(model, model, glm.vec3.set(glm.vec3.create(), -space * (rowLen - 1) / 2, -space * (colLen - 1) / 2, 0));
+        glm.mat4.translate(model, model, glm.vec3.set(glm.vec3.create(), 0, -space * (colLen - 1) / 2, 0));
+
         let offsetH = glm.vec3.set(glm.vec3.create(), space, 0, 0);
         let offsetV = glm.vec3.set(glm.vec3.create(), 0, space, 0);
 
         for (let row = 0; row < rowLen; row++) {
 
-            metallicMap[0] = 255 / rowLen*row;
+            metallicMap[0] = 255 / rowLen * row;
             state.updateTexture2D({
                 textureBuffer: metallicTexture,
                 image: metallicMap,
@@ -355,8 +359,9 @@ export default class GL_PbrPage extends GL_Page {
 
             state.setTexture2D("metallicMap", metallicTexture, 6);
             let curModelPos = glm.vec3.scale(glm.vec3.create(), offsetH, row);
+
             for (let col = 0; col < colLen; col++) {
-                roughnessMap[0]  = 255 / colLen*col;
+                roughnessMap[0] = 255 / colLen * col;
                 state.updateTexture2D({
                     textureBuffer: roughnessTexture,
                     image: roughnessMap,
@@ -366,27 +371,20 @@ export default class GL_PbrPage extends GL_Page {
                     format: gl.LUMINANCE,
                     type: gl.UNSIGNED_BYTE
                 });
-
+                glm.mat4.rotate(model, model, Math.PI / 4 * Math.sin(new Date().getTime() / 10000), glm.vec3.set(glm.vec3.create(), 0, 1, 0));
                 state.setTexture2D("roughnessMap", roughnessTexture, 7);
                 let resultModelPos = glm.vec3.add(glm.vec3.create(), curModelPos, glm.vec3.scale(glm.vec3.create(), offsetV, col));
                 let resultModelView = glm.mat4.translate(glm.mat4.create(), model, resultModelPos);
-                glm.mat4.rotate(resultModelView, resultModelView, Math.PI / 2, glm.vec3.set(glm.vec3.create(), -1, 1, 1));
-
                 state.setMat4("model", resultModelView);
+
                 state.drawElements(sphereGeo.indices.data.length);
             }
         }
 
-
-    }
-    drawBackground(){
         this.state.use(this.backgroundMeshInfo.program);
         this.state.setVao(this.backgroundMeshInfo.vao);
         this.state.drawElements(this.backgroundMeshInfo.geometry.indices.data.length);
-    }
-    update() {
-        this.drawSpheres();
-        this.drawBackground();
+
         this.state.unBindRenderTarget();
     }
 

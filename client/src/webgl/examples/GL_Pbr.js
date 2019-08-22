@@ -305,6 +305,7 @@ export default class GL_Pbr {
                 state.drawElements(sphereGeometry.indices.data.length);
             }
         }
+
         state.use(backgroundProgramInfo.program);
         state.setMat4("view", cameraView);
         state.setMat4("projection", cameraProjection);

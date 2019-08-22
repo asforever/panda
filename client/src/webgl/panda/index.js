@@ -14,6 +14,7 @@ import Material from "./Object3D/material/Material";
 import Vector3 from "./math/Vector3";
 import Vector2 from "./math/Vector2";
 import GMath from "./math/GMath";
+import Matrix4 from "./math/Matrix4";
 
 import ShaderLib from "./shaderLib/ShaderLib";
 
@@ -33,6 +34,7 @@ export {
     Vector3,
     Vector2,
     GMath,
+    Matrix4,
 
     Object3D,
     Mesh,
