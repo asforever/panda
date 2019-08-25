@@ -1,5 +1,5 @@
 module.exports = {
     mongondb: {
-        url: 'mongodb://95.169.6.128:27017/test'
+        url: 'mongodb://95.169.9.37:27017/test'
     }
 }

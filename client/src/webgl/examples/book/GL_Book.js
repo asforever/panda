@@ -223,7 +223,7 @@ export default class GL_Book {
     };
 
     onResize = (e) => {
-        const state = this.state;
+      /*  const state = this.state;
         state.deleteVao(this.meshInfo.vao);
 
         this.width = this.canvas.width = this.canvas.clientWidth;
@@ -239,7 +239,7 @@ export default class GL_Book {
         state.setFloat("width", this.width);
         state.setFloat("height", this.height);
         state.setFloat("ratio", this.width / this.height);
-        this.draw();
+        this.draw();*/
     };
 
     dispose() {
