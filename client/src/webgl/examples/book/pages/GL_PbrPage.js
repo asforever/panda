@@ -5,7 +5,7 @@ import {
     CubeGeometry,
     QuadGeometry,
     SphereGeometry,
-    FileLoader, Texture2D_GL, RenderTarget_GL
+    FileLoader, Texture2D_GL, RenderTarget_GL, TextureCube_GL
 } from "../../../panda";
 import * as glm from "gl-matrix";
 
@@ -14,6 +14,7 @@ export default class GL_PbrPage extends GL_Page {
     constructor(state, width, height) {
         super(state, width, height);
 
+        this.camera = null;
         this.sphereMeshInfo = null;
         this.backgroundMeshInfo = null;
     }
@@ -131,7 +132,7 @@ export default class GL_PbrPage extends GL_Page {
                 minF: gl.LINEAR_MIPMAP_LINEAR,
             });
 
-            const irradianceMap = state.createTextureCube({
+            const irradianceTexture = state.createTextureCube({
                 internalFormat: gl.RGBA16F,
                 format: gl.RGBA,
                 type: gl.FLOAT,
@@ -139,7 +140,7 @@ export default class GL_PbrPage extends GL_Page {
             });
 
             //prefilter map
-            const prefilterMap = state.createTextureCube({
+            const prefilterTexture = state.createTextureCube({
                 internalFormat: gl.RGBA16F,
                 format: gl.RGBA,
                 type: gl.FLOAT,
@@ -149,7 +150,7 @@ export default class GL_PbrPage extends GL_Page {
             });
 
 
-            const brdfMap = state.createTexture2D({
+            const brdfTexture = state.createTexture2D({
                 internalFormat: gl.RG16F,
                 format: gl.RG,
                 type: gl.FLOAT,
@@ -189,7 +190,8 @@ export default class GL_PbrPage extends GL_Page {
             state.viewport(0, 0, 512, 512);
             state.use(toDToCubeMapProgramInfo.program);
             state.setMat4("projection", captureProjection);
-            state.setTexture2D("equirectangularMap", hdrMap, 0);
+            state.setInt("equirectangularMap", 0);
+            state.setTexture2D(hdrMap, 0);
 
             state.setVao(cubeVAO);
             for (let i = 0; i < 6; ++i) {
@@ -205,13 +207,14 @@ export default class GL_PbrPage extends GL_Page {
             state.use(irrProgramInfo.program);
             state.viewport(0, 0, 32, 32);
             state.setMat4("projection", captureProjection);
-            state.setTextureCube("environmentMap", envCubeMap, 0, true);
+            state.setInt("environmentMap", 0);
+            state.setTextureCube(envCubeMap, 0);
             state.setVao(cubeVAO);
             state.resizeRenderTarget(captureRenderTarget, 32, 32);
             state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             for (let i = 0; i < 6; ++i) {
                 state.setMat4("view", captureViews[i]);
-                state.setCubeRenderTarget(captureRenderTarget, irradianceMap, i);
+                state.setCubeRenderTarget(captureRenderTarget, irradianceTexture, i);
                 state.drawElements(36);
             }
             state.unBindRenderTarget();
@@ -219,6 +222,7 @@ export default class GL_PbrPage extends GL_Page {
             state.use(prefilterProgramInfo.program);
             state.setMat4("projection", captureProjection);
             state.setVao(cubeVAO);
+            state.setInt("environmentMap", 0);
 
             let maxMipLevels = 5;
             for (let mip = 0; mip < maxMipLevels; ++mip) {
@@ -231,8 +235,8 @@ export default class GL_PbrPage extends GL_Page {
 
                 for (let i = 0; i < 6; ++i) {
                     state.setMat4("view", captureViews[i]);
-                    state.setTextureCube("environmentMap", envCubeMap, 0, true);
-                    state.setCubeRenderTarget(captureRenderTarget, prefilterMap, i, mip);
+                    state.setTextureCube(envCubeMap, 0);
+                    state.setCubeRenderTarget(captureRenderTarget, prefilterTexture, i, mip);
                     state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                     state.drawElements(36);
                 }
@@ -245,19 +249,18 @@ export default class GL_PbrPage extends GL_Page {
             state.viewport(0, 0, 512, 512);
             state.setVao(quadVAO);
             state.resizeRenderTarget(captureRenderTarget, 512, 512);
-            state.setRenderTarget(captureRenderTarget, brdfMap);
+            state.setRenderTarget(captureRenderTarget, brdfTexture);
             state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             state.drawElements(quadGeometry.indices.data.length);
             state.unBindRenderTarget();
-            state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-            gl.cullFace(gl.FRONT);
             //pbr
-
+            state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.cullFace(gl.FRONT);
 
             state.use(pbrProgramInfo.program);
             state.resizeRenderTarget(captureRenderTarget, this.width, this.height);
-           // state.setRenderTarget(captureRenderTarget, this.texture);
+            // state.setRenderTarget(captureRenderTarget, this.texture);
             state.viewport(0, 0, this.width, this.height);
             state.setVao(sphereVAO);
 
@@ -265,13 +268,14 @@ export default class GL_PbrPage extends GL_Page {
             state.setMat4("view", cameraView);
             state.setVec3("camPos", ...cameraPos);
             state.setFloat("opacity", 1.);
-            state.setTextureCube("irradianceMap", irradianceMap, 0);
-            state.setTextureCube("prefilterMap", prefilterMap, 1);
-            state.setTexture2D("brdfLUT", brdfMap, 2);
-            state.setTexture2D("albedoMap", albedoTexture, 3);
-            state.setTexture2D("normalMap", normalTexture, 4);
-            state.setTexture2D("aoMap", aoTexture, 5);
-
+            state.setInt("irradianceMap", 0);
+            state.setInt("prefilterMap", 1);
+            state.setInt("brdfLUT", 2);
+            state.setInt("albedoMap", 3);
+            state.setInt("normalMap", 4);
+            state.setInt("aoMap", 5);
+            state.setInt("metallicMap", 6);
+            state.setInt("roughnessMap", 5);
 
             for (let i = 0; i < lightPositions.length; ++i) {
                 state.setVec3("pointLightPositions[" + i + "]", ...lightPositions[i]);
@@ -281,13 +285,19 @@ export default class GL_PbrPage extends GL_Page {
             state.use(backgroundProgramInfo.program);
             state.setMat4("view", cameraView);
             state.setMat4("projection", cameraProjection);
-            state.setTextureCube("environmentMap", envCubeMap);
+
 
             this.sphereMeshInfo = new Mesh_GL({
                 program: pbrProgramInfo.program,
                 vao: sphereVAO,
                 geometry: sphereGeometry,
                 textures: {
+                    "irradianceMap": new Texture2D_GL({textureGL: irradianceTexture}),
+                    "prefilterMap": new Texture2D_GL({textureGL: prefilterTexture}),
+                    "brdfLUTMap": new Texture2D_GL({textureGL: brdfTexture}),
+                    "albedoMap": new Texture2D_GL({textureGL: albedoTexture}),
+                    "normalMap": new Texture2D_GL({textureGL: normalTexture}),
+                    "aoMap": new Texture2D_GL({textureGL: aoTexture}),
                     "metallicMap": new Texture2D_GL({textureGL: metallicTexture, image: metallicMap}),
                     "roughnessMap": new Texture2D_GL({textureGL: roughnessTexture, image: roughnessMap})
                 },
@@ -298,6 +308,9 @@ export default class GL_PbrPage extends GL_Page {
                 program: backgroundProgramInfo.program,
                 vao: cubeVAO,
                 geometry: cubeGeometry,
+                textures: {
+                    "environmentMap": new TextureCube_GL({textureGL: envCubeMap}),
+                },
             });
 
 
@@ -317,6 +330,7 @@ export default class GL_PbrPage extends GL_Page {
         const state = this.state
             , gl = state.getContext()
             , sphereMeshInfo = this.sphereMeshInfo
+            , backMesh = this.backgroundMeshInfo
             , renderTarget = sphereMeshInfo.renderTarget
             , sphereVAO = sphereMeshInfo.vao
             , sphereGeo = sphereMeshInfo.geometry
@@ -324,25 +338,39 @@ export default class GL_PbrPage extends GL_Page {
             , rowLen = 6
             , colLen = 6;
 
+        const space = sphereMeshInfo.geometry.radius
+            , irradianceTexture = textures["irradianceMap"].textureGL
+            , prefilterTexture = textures["prefilterMap"].textureGL
+            , brdfTexture = textures["brdfLUTMap"].textureGL
+            , albedoTexture = textures["albedoMap"].textureGL
+            , normalTexture = textures["normalMap"].textureGL
+            , aoTexture = textures["aoMap"].textureGL
 
-        state.setRenderTarget(renderTarget.target, renderTarget.texture);
-        state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        gl.enable(gl.CULL_FACE);
-        gl.cullFace(gl.FRONT);
-        state.use(sphereMeshInfo.program);
-        state.setVao(sphereVAO);
-        const space = sphereMeshInfo.geometry.radius;
-        const metallicMap = textures["metallicMap"].image;
-        const metallicTexture = textures["metallicMap"].textureGL;
-        const roughnessMap = textures["roughnessMap"].image;
-        const roughnessTexture = textures["roughnessMap"].textureGL;
+            , metallicMap = textures["metallicMap"].image
+            , metallicTexture = textures["metallicMap"].textureGL
+            , roughnessMap = textures["roughnessMap"].image
+            , roughnessTexture = textures["roughnessMap"].textureGL
+            , environmentTexture = backMesh.textures["environmentMap"].textureGL;
 
         let model = glm.mat4.create();
         glm.mat4.translate(model, model, glm.vec3.set(glm.vec3.create(), 0, -space * (colLen - 1) / 2, 0));
 
         let offsetH = glm.vec3.set(glm.vec3.create(), space, 0, 0);
         let offsetV = glm.vec3.set(glm.vec3.create(), 0, space, 0);
+
+        gl.enable(gl.CULL_FACE);
+        gl.cullFace(gl.FRONT);
+        state.setRenderTarget(renderTarget.target, renderTarget.texture);
+        state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        state.use(sphereMeshInfo.program);
+        state.setVao(sphereVAO);
+        state.setTextureCube(irradianceTexture, 0);
+        state.setTextureCube(prefilterTexture, 1);
+        state.setTexture2D(brdfTexture, 2);
+        state.setTexture2D(albedoTexture, 3);
+        state.setTexture2D(normalTexture, 4);
+        state.setTexture2D(aoTexture, 5);
 
         for (let row = 0; row < rowLen; row++) {
 
@@ -357,7 +385,7 @@ export default class GL_PbrPage extends GL_Page {
                 type: gl.UNSIGNED_BYTE
             });
 
-            state.setTexture2D("metallicMap", metallicTexture, 6);
+            state.setTexture2D(metallicTexture, 6);
             let curModelPos = glm.vec3.scale(glm.vec3.create(), offsetH, row);
 
             for (let col = 0; col < colLen; col++) {
@@ -372,20 +400,24 @@ export default class GL_PbrPage extends GL_Page {
                     type: gl.UNSIGNED_BYTE
                 });
                 glm.mat4.rotate(model, model, Math.PI / 4 * Math.sin(new Date().getTime() / 10000), glm.vec3.set(glm.vec3.create(), 0, 1, 0));
-                state.setTexture2D("roughnessMap", roughnessTexture, 7);
+                state.setTexture2D(roughnessTexture, 7);
                 let resultModelPos = glm.vec3.add(glm.vec3.create(), curModelPos, glm.vec3.scale(glm.vec3.create(), offsetV, col));
                 let resultModelView = glm.mat4.translate(glm.mat4.create(), model, resultModelPos);
                 state.setMat4("model", resultModelView);
-
                 state.drawElements(sphereGeo.indices.data.length);
             }
         }
 
-        this.state.use(this.backgroundMeshInfo.program);
-        this.state.setVao(this.backgroundMeshInfo.vao);
-        this.state.drawElements(this.backgroundMeshInfo.geometry.indices.data.length);
 
-        this.state.unBindRenderTarget();
+        state.use(backMesh.program);
+        state.setVao(backMesh.vao);
+        state.setTextureCube(environmentTexture);
+        state.drawElements(backMesh.geometry.indices.data.length);
+        state.unBindRenderTarget();
+    }
+
+    onResize = (e) => {
+        super.onResize(e);
     }
 
 }

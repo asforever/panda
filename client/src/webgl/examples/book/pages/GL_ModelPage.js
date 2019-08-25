@@ -9,12 +9,13 @@ import {
     ShaderLib, Vector3,
 } from "../../../panda";
 import * as glm from "gl-matrix";
+import Texture2D_GL from "../../../panda/core/Texture2D_GL";
 
 export default class GL_ModelPage extends GL_Page {
     constructor(state, width, height) {
         super(state, width, height);
-        this.opaqueMeshes = [];
-        this.transparentMeshes = [];
+        this.opaqueMesh = null;
+        this.transparentMesh = null;
     }
 
     async loadTexture() {
@@ -58,10 +59,10 @@ export default class GL_ModelPage extends GL_Page {
                 glm.vec3.set(glm.vec3.create(), 30, -30, 30),
             ];
             const pointLightColors = [
-                glm.vec3.set(glm.vec3.create(), 20000, 2000, 0),
+                glm.vec3.set(glm.vec3.create(), 300, 300, 0),
                 glm.vec3.set(glm.vec3.create(), 1000, 0, 300),
-                glm.vec3.set(glm.vec3.create(), 300, 0, 1000),
-                glm.vec3.set(glm.vec3.create(), 300, 1000, 300),
+                glm.vec3.set(glm.vec3.create(), 300, 0, 300),
+                glm.vec3.set(glm.vec3.create(), 300, 300, 300),
                 glm.vec3.set(glm.vec3.create(), 300, 0, 300)
             ];
 
@@ -138,7 +139,7 @@ export default class GL_ModelPage extends GL_Page {
                 minF: gl.LINEAR_MIPMAP_LINEAR,
             });
 
-            const irradianceMap = state.createTextureCube({
+            const irradianceTexture = state.createTextureCube({
                 internalFormat: gl.RGBA16F,
                 format: gl.RGBA,
                 type: gl.FLOAT,
@@ -146,7 +147,7 @@ export default class GL_ModelPage extends GL_Page {
             });
 
             //prefilter map
-            const prefilterMap = state.createTextureCube({
+            const prefilterTexture = state.createTextureCube({
                 internalFormat: gl.RGBA16F,
                 format: gl.RGBA,
                 type: gl.FLOAT,
@@ -156,7 +157,7 @@ export default class GL_ModelPage extends GL_Page {
             });
 
 
-            const brdfMap = state.createTexture2D({
+            const brdfTexture = state.createTexture2D({
                 internalFormat: gl.RG16F,
                 format: gl.RG,
                 type: gl.FLOAT,
@@ -198,7 +199,8 @@ export default class GL_ModelPage extends GL_Page {
             state.viewport(0, 0, 512, 512);
             state.use(toDToCubeMapProgramInfo.program);
             state.setMat4("projection", captureProjection);
-            state.setTexture2D("equirectangularMap", hdrMap, 0);
+            state.setInt("equirectangularMap", 0);
+            state.setTexture2D(hdrMap, 0);
 
             state.setVao(cubeVAO);
             for (let i = 0; i < 6; ++i) {
@@ -214,13 +216,14 @@ export default class GL_ModelPage extends GL_Page {
             state.use(irrProgramInfo.program);
             state.viewport(0, 0, 32, 32);
             state.setMat4("projection", captureProjection);
-            state.setTextureCube("environmentMap", envCubeMap, 0, true);
+            state.setInt("environmentMap", 0);
+            state.setTextureCube(envCubeMap, 0);
             state.setVao(cubeVAO);
             state.resizeRenderTarget(captureRenderTarget, 32, 32);
             state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             for (let i = 0; i < 6; ++i) {
                 state.setMat4("view", captureViews[i]);
-                state.setCubeRenderTarget(captureRenderTarget, irradianceMap, i);
+                state.setCubeRenderTarget(captureRenderTarget, irradianceTexture, i);
                 state.drawElements(36);
             }
             state.unBindRenderTarget();
@@ -228,6 +231,7 @@ export default class GL_ModelPage extends GL_Page {
             state.use(prefilterProgramInfo.program);
             state.setMat4("projection", captureProjection);
             state.setVao(cubeVAO);
+            state.setInt("environmentMap", 0);
 
             let maxMipLevels = 5;
             for (let mip = 0; mip < maxMipLevels; ++mip) {
@@ -240,8 +244,8 @@ export default class GL_ModelPage extends GL_Page {
 
                 for (let i = 0; i < 6; ++i) {
                     state.setMat4("view", captureViews[i]);
-                    state.setTextureCube("environmentMap", envCubeMap, 0, true);
-                    state.setCubeRenderTarget(captureRenderTarget, prefilterMap, i, mip);
+                    state.setTextureCube(envCubeMap, 0);
+                    state.setCubeRenderTarget(captureRenderTarget, prefilterTexture, i, mip);
                     state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                     state.drawElements(36);
                 }
@@ -254,7 +258,7 @@ export default class GL_ModelPage extends GL_Page {
             state.viewport(0, 0, 512, 512);
             state.setVao(quadVAO);
             state.resizeRenderTarget(captureRenderTarget, 512, 512);
-            state.setRenderTarget(captureRenderTarget, brdfMap);
+            state.setRenderTarget(captureRenderTarget, brdfTexture);
             state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             state.drawElements(quadGeometry.indices.data.length);
             state.unBindRenderTarget();
@@ -269,14 +273,17 @@ export default class GL_ModelPage extends GL_Page {
             state.setMat4("view", cameraView);
             state.setVec3("camPos", ...cameraPos);
             state.setFloat("opacity", 1);
-            state.setTextureCube("irradianceMap", irradianceMap, 0);
-            state.setTextureCube("prefilterMap", prefilterMap, 1);
-            state.setTexture2D("brdfLUT", brdfMap, 2);
-            state.setTexture2D("albedoMap", albedoTexture, 3);
-            state.setTexture2D("normalMap", normalTexture, 4);
-            state.setTexture2D("aoMap", aoTexture, 5);
-            state.setTexture2D("metallicMap", metallicTexture, 6);
-            state.setTexture2D("roughnessMap", roughnessTexture, 7);
+
+            state.setInt("irradianceMap", 0);
+            state.setInt("prefilterMap", 1);
+            state.setInt("brdfLUT", 2);
+            state.setInt("albedoMap", 3);
+            state.setInt("normalMap", 4);
+            state.setInt("aoMap", 5);
+            state.setInt("metallicMap", 6);
+            state.setInt("roughnessMap", 7);
+
+            state.setTexture2D(roughnessTexture, 7);
             state.setMat4("model", glm.mat4.create());
             state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             for (let i = 0; i < pointLightPositions.length; ++i) {
@@ -285,19 +292,40 @@ export default class GL_ModelPage extends GL_Page {
             }
 
             //buffer
+            const textures = {
+                "irradianceMap": new Texture2D_GL({textureGL: irradianceTexture}),
+                "prefilterMap": new Texture2D_GL({textureGL: prefilterTexture}),
+                "brdfLUTMap": new Texture2D_GL({textureGL: brdfTexture}),
+                "albedoMap": new Texture2D_GL({textureGL: albedoTexture}),
+                "normalMap": new Texture2D_GL({textureGL: normalTexture}),
+                "aoMap": new Texture2D_GL({textureGL: aoTexture}),
+                "metallicMap": new Texture2D_GL({textureGL: metallicTexture, image: metallicMap}),
+                "roughnessMap": new Texture2D_GL({textureGL: roughnessTexture, image: roughnessMap})
+            };
+            this.opaqueMesh = new Mesh_GL({
+                program: pbrProgramInfo.program,
+                vao: [],
+                geometry: [],
+                renderTarget: new RenderTarget_GL({target: captureRenderTarget, texture: this.texture}),
+                textures: textures
+            });
+            this.transparentMesh = new Mesh_GL({
+                program: pbrProgramInfo.program,
+                vao: [],
+                geometry: [],
+                renderTarget: new RenderTarget_GL({target: captureRenderTarget, texture: this.texture}),
+                textures: textures
+            });
 
             modelObject3D.children.forEach((mesh, key) => {
-                let meshInfo = new Mesh_GL({
-                    program: pbrProgramInfo.program,
-                    vao: state.createVaoFromGeometry(mesh.geometry),
-                    geometry: mesh.geometry,
-                    renderTarget: new RenderTarget_GL({target: captureRenderTarget, texture: this.texture})
-                });
 
-                if (mesh.name !== "glass lantern") {
-                    this.opaqueMeshes.push(meshInfo);
+
+                if (mesh.name === "glass lantern") {
+                    this.transparentMesh.geometry.push(mesh.geometry);
+                    this.transparentMesh.vao.push(state.createVaoFromGeometry(mesh.geometry));
                 } else {
-                    this.transparentMeshes.push(meshInfo);
+                    this.opaqueMesh.geometry.push(mesh.geometry);
+                    this.opaqueMesh.vao.push(state.createVaoFromGeometry(mesh.geometry));
                 }
 
             });
@@ -311,34 +339,43 @@ export default class GL_ModelPage extends GL_Page {
         const state = this.state, gl = state.getContext();
 
         //draw pbr model
-        const program = this.opaqueMeshes[0].program;
-        const renderTarget = this.opaqueMeshes[0].renderTarget;
-        const modelMatrix = this.opaqueMeshes[0].modelMatrix;
+        const program = this.opaqueMesh.program;
+        const renderTarget = this.opaqueMesh.renderTarget;
+        const modelMatrix = this.opaqueMesh.modelMatrix;
+        const textures = this.opaqueMesh.textures;
 
         state.use(program);
+
+        gl.disable(gl.CULL_FACE);
         state.setRenderTarget(renderTarget.target, renderTarget.texture);
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
         modelMatrix.rotationByAxis(Math.PI / 180, new Vector3(0, 1, 0));
-
         state.setMat4("model", modelMatrix.data);
-
-        this.opaqueMeshes.forEach((meshInfo) => {
-            gl.disable(gl.BLEND);
-            state.setVao(meshInfo.vao);
-            state.setFloat("opacity", 1.0);
-            state.drawArray(meshInfo.geometry.attributes["position"].data.length / 3);
+        state.setTextureCube(textures["irradianceMap"].textureGL, 0);
+        state.setTextureCube(textures["prefilterMap"].textureGL, 1);
+        state.setTexture2D(textures["brdfLUTMap"].textureGL, 2);
+        state.setTexture2D(textures["albedoMap"].textureGL, 3);
+        state.setTexture2D(textures["normalMap"].textureGL, 4);
+        state.setTexture2D(textures["aoMap"].textureGL, 5);
+        state.setTexture2D(textures["metallicMap"].textureGL, 6);
+        state.setTexture2D(textures["roughnessMap"].textureGL, 7);
+//
+        gl.disable(gl.BLEND);
+        state.setFloat("opacity", 1.0);
+        const opaqueGeo = this.opaqueMesh.geometry;
+        this.opaqueMesh.vao.forEach((vao, key) => {
+            state.setVao(vao);
+            state.drawArray(opaqueGeo[key].attributes["position"].data.length / 3);
         });
-        this.transparentMeshes.forEach((meshInfo) => {
-            gl.enable(gl.BLEND);
-            gl.blendEquation(gl.FUNC_ADD);
-            gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
 
-            gl.cullFace(gl.FRONT);
-
-            state.setVao(meshInfo.vao);
-            state.setFloat("opacity", 0.8);
-            state.drawArray(meshInfo.geometry.attributes["position"].data.length / 3);
+        gl.enable(gl.BLEND);
+        state.setFloat("opacity", 0.8);
+        gl.blendEquation(gl.FUNC_ADD);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
+        const transparentGeo = this.transparentMesh.geometry;
+        this.transparentMesh.vao.forEach((vao, key) => {
+            state.setVao(vao);
+            state.drawArray(transparentGeo[key].attributes["position"].data.length / 3);
         });
 
         gl.disable(gl.BLEND);

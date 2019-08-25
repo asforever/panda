@@ -1,6 +1,6 @@
-export default class Texture2D_GL {
-    constructor({textureGL,image}) {
+export default class TextureCube_GL {
+    constructor({textureGL, images = []}) {
         this.textureGL = textureGL;
-        this.image = image;
+        this.images = images;
     }
 }

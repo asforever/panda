@@ -191,4 +191,8 @@ export default class Webgl2Api {
     static deleteShader(gl, shader) {
         gl.deleteShader(shader);
     }
+
+    static deleteVao(gl, vao) {
+        gl.deleteVertexArray(vao);
+    }
 }

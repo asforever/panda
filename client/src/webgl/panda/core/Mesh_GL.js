@@ -17,5 +17,5 @@ export default class Mesh_GL {
         this.textures = textures;
         this.modelMatrix = modelMatrix;
     }
-    
+
 }

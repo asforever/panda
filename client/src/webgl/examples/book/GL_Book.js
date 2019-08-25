@@ -62,7 +62,7 @@ export default class GL_Book {
         await nullPage.loadTexture();
 
         const pages = [
-            titlePage,
+            //  titlePage,
             pbrPage,
             modelPage,
             nullPage
@@ -72,12 +72,13 @@ export default class GL_Book {
 
     configContext() {
         const canvas = this.canvas, state = this.state, gl = state.getContext();
+        state.setClearColor(0.0, 0.0, 0.0, 1.0);
 
         gl.enable(gl.CULL_FACE);
         gl.cullFace(gl.BACK);
 
         //camera
-        const bookCamera = this.camera = glm.mat4.perspective(glm.mat4.create(), Math.PI / 2, canvas.width / canvas.height, 0.1, 10);
+        this.camera = glm.mat4.perspective(glm.mat4.create(), Math.PI / 2, canvas.width / canvas.height, 0.1, 10);
         const bookCameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 0, 0, 0.5), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, 1, 0));
 
         const bookGeometry = new QuadGeometry(canvas.width / canvas.height, 1);
@@ -90,13 +91,15 @@ export default class GL_Book {
         state.viewport(0, 0, canvas.width, canvas.height);
         state.use(bookProgramInfo.program);
         state.setMat4("view", bookCameraView);
-        state.setMat4("projection", bookCamera);
+        state.setMat4("projection", this.camera);
         state.setMat4("model", glm.mat4.create());
         state.setFloat("iTime", new Date().getTime());
         state.setFloat("width", bookGeometry.width);
         state.setFloat("height", bookGeometry.height);
-        state.setTexture2D("iChannel0", this.pages[this.curPageIndex].getTexture(), 0);
-        state.setTexture2D("iChannel1", this.pages[this.curPageIndex + 1].getTexture(), 1);
+        state.setInt("iChannel0", 0);
+        state.setInt("iChannel1", 1);
+        state.setTexture2D(this.pages[this.curPageIndex].getTexture(), 0);
+        state.setTexture2D(this.pages[this.curPageIndex + 1].getTexture(), 1);
         state.setFloat("ratio", ratio);
         state.setVec2("mouse", ratio, 0);
         state.setVao(bookVAO);
@@ -124,19 +127,26 @@ export default class GL_Book {
         this.pages = pages;
     }
 
-    usePage(page) {
+    usePage(page, isRight = true) {
         const state = this.state;
-        const ratio = this.width / this.height;
-
         const curPage = this.pages[page] ? this.pages[page].getTexture() : null;
         const nextPage = this.pages[page + 1] ? this.pages[page + 1].getTexture() : null;
 
         this.curPageIndex = page;
-        state.setTexture2D("iChannel0", curPage, 0);
-        state.setTexture2D("iChannel1", nextPage, 1);
-        state.setVec2("mouse", ratio, 0);
+        state.setTexture2D(curPage, 0);
+        state.setTexture2D(nextPage, 1);
+        isRight ? this.resetRightMouse() : this.resetLeftMouse();
+    }
 
-        this.draw();
+    resetLeftMouse() {
+        this.mousePoint.set(0, 0);
+        this.updateMouse();
+    }
+
+    resetRightMouse() {
+        const ratio = this.width / this.height;
+        this.mousePoint.set(ratio, 0);
+        this.updateMouse();
     }
 
     updateMouse() {
@@ -144,10 +154,11 @@ export default class GL_Book {
     }
 
     draw() {
-        const state = this.state,gl = state.getContext();
-       // this.pages[this.curPageIndex].update();
+        const state = this.state, gl = state.getContext();
+        this.pages[this.curPageIndex].update();
 
         gl.cullFace(gl.BACK);
+        state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         state.use(this.meshInfo.program);
         state.setVao(this.meshInfo.vao);
         state.drawElements(this.meshInfo.geometry.indices.data.length);
@@ -157,7 +168,7 @@ export default class GL_Book {
     animate() {
         const width = this.canvas.clientWidth;
         const ratio = this.width / this.height;
-        let dW = Math.sin(Math.PI * this.mousePoint.x / width + 0.01)*2.;
+        let dW = Math.sin(Math.PI * this.mousePoint.x / width + 0.01) * 2.;
         let dH = 0.003;
 
         if (this.animateState === GL_Book.ToLastPage) {
@@ -165,6 +176,7 @@ export default class GL_Book {
                 this.mousePoint.add(new Vector2(dW, dH));
                 this.updateMouse();
             } else {
+                this.resetRightMouse();
                 this.animateState = GL_Book.Stop;
             }
         }
@@ -192,7 +204,7 @@ export default class GL_Book {
             if (this.curPageIndex > 0) {
                 this.mousePoint.set(0, 0);
                 this.updateMouse();
-                this.usePage(this.curPageIndex - 1);
+                this.usePage(this.curPageIndex - 1, false);
                 this.animateState = GL_Book.ToLastPage;
             }
         } else {
@@ -211,6 +223,23 @@ export default class GL_Book {
     };
 
     onResize = (e) => {
+        const state = this.state;
+        state.deleteVao(this.meshInfo.vao);
+
+        this.width = this.canvas.width = this.canvas.clientWidth;
+        this.height = this.canvas.height = this.canvas.clientHeight;
+
+        this.pages[this.curPageIndex].onResize(e);
+        glm.mat4.perspective(this.camera, Math.PI / 2, this.width / this.height, 0.1, 10);
+        this.meshInfo.geometry.resetSize(this.width * 2/ this.height, 1);
+        this.meshInfo.vao = state.createVaoFromGeometry(this.meshInfo.geometry);
+
+        state.viewport(0, 0, this.width, this.height);
+        state.setMat4("projection", this.camera);
+        state.setFloat("width", this.width);
+        state.setFloat("height", this.height);
+        state.setFloat("ratio", this.width / this.height);
+        this.draw();
     };
 
     dispose() {

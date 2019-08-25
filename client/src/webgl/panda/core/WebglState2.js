@@ -36,18 +36,14 @@ export default class WebglState2 {
         Webgl2Api.updateTexture2D(this._gl, textureBuffer, image, internalFormat, width, height, format, type, levels);
     }
 
-    setTexture2D(location, textureBuffer, uint = 0) {
+    setTexture2D(textureBuffer, uint = 0) {
         const gl = this._gl;
-        const uniformLocation = gl.getUniformLocation(this.curProgram, location);
-        gl.uniform1i(uniformLocation, uint);
         gl.activeTexture(gl.TEXTURE0 + uint);
         gl.bindTexture(gl.TEXTURE_2D, textureBuffer);
     }
 
-    setTextureCube(location, webglTexture, uint = 0) {
+    setTextureCube(webglTexture, uint = 0) {
         const gl = this._gl;
-        const uniformLocation = gl.getUniformLocation(this.curProgram, location);
-        gl.uniform1i(uniformLocation, uint);
         gl.activeTexture(gl.TEXTURE0 + uint);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, webglTexture);
     }
@@ -113,11 +109,13 @@ export default class WebglState2 {
         const uniformLocation = gl.getUniformLocation(this.curProgram, location);
         gl.uniform1f(uniformLocation, floatNum);
     }
-    setVec2(location,x,y){
+
+    setVec2(location, x, y) {
         const gl = this._gl;
         const uniformLocation = gl.getUniformLocation(this.curProgram, location);
         gl.uniform2fv(uniformLocation, [x, y]);
     }
+
     setVec3(location, x, y, z) {
         const gl = this._gl;
         const uniformLocation = gl.getUniformLocation(this.curProgram, location);
@@ -186,5 +184,9 @@ export default class WebglState2 {
         const gl = this._gl;
         gl.enable(cap);
         if (cap) gl.depthFunc(gl.LEQUAL);
+    }
+
+    deleteVao(vao) {
+        Webgl2Api.deleteVao(this._gl, vao);
     }
 }

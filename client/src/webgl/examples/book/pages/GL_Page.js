@@ -12,4 +12,7 @@ export default class GL_Page {
 
     dispose() {
     }
+
+    onResize(e) {
+    }
 }

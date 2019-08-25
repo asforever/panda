@@ -6,7 +6,7 @@ export default class GL_NullPage extends GL_Page{
         if (!this.texture) {
             const state = this.state;
             this.texture = state.createTexture2D({
-                image: new Uint8Array([255,255,255,255]),
+                image: new Uint8Array([0,0,0,255]),
                 width: 1,
                 height: 1,
 

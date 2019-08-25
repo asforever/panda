@@ -1,6 +1,7 @@
 import WebglState2 from "./core/WebglState2";
 import Mesh_GL from "./core/Mesh_GL";
 import Texture2D_GL from "./core/Texture2D_GL";
+import TextureCube_GL from "./core/TextureCube_GL";
 import RenderTarget_GL from "./core/RenderTarget_GL";
 
 import Object3D from "./Object3D/Object3D";
@@ -29,6 +30,7 @@ export {
     ShaderLib,
     RenderTarget_GL,
     Texture2D_GL,
+    TextureCube_GL,
     Mesh_GL,
 
     Vector3,
