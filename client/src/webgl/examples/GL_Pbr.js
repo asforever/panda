@@ -15,7 +15,7 @@ export default class GL_Pbr {
 
     async run(canvas) {
         const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);
-        const albedoMap = new Uint8Array([255, 0, 0, 255]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/albedo.png", undefined, FileLoader.IMAGE);
+        const albedoMap = new Uint8Array([255, 255, 255, 255]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/albedo.png", undefined, FileLoader.IMAGE);
         const aoMap = new Uint8Array([255]);// await new FileLoader().load("./assets/textures/pbr/rusted_iron/ao.png", undefined, FileLoader.IMAGE);
         const normalMap = await new FileLoader().load("./assets/textures/pbr/rusted_iron/normal.png", undefined, FileLoader.IMAGE);
         const metallicMap = new Uint8Array([255]);//await new FileLoader().load("./assets/textures/pbr/rusted_iron/metallic.png", undefined, FileLoader.IMAGE);
@@ -40,7 +40,7 @@ export default class GL_Pbr {
 
         const cubeGeometry = new CubeGeometry();
         const quadGeometry = new QuadGeometry();
-        const sphereGeometry = new SphereGeometry(5,64,64);
+        const sphereGeometry = new SphereGeometry(5, 64, 64);
 
         const lightPositions = [
             glm.vec3.set(glm.vec3.create(), 0, 0, 30),
@@ -161,11 +161,14 @@ export default class GL_Pbr {
             , toDToCubeMapSource = ShaderLib.convert_2d_to_cubemap
             , irrSource = ShaderLib.irradiance_convolution;
 
-        const pbrProgramInfo = state.createProgramInfo(pbrSource.vs.getSource(),  pbrSource.fs.getSource())
+        const pbrProgramInfo = state.createProgramInfo(pbrSource.vs.getSource(), pbrSource.fs.getSource())
             , brdfProgramInfo = state.createProgramInfo(brdfSource.vs.getSource(), brdfSource.fs.getSource())
-            , backgroundProgramInfo = state.createProgramInfo(backgroundSource.vs.getSource(), backgroundSource.fs.getSource())
-            , prefilterProgramInfo = state.createProgramInfo(prefilterSource.vs.getSource(), prefilterSource.fs.getSource())
-            , toDToCubeMapProgramInfo = state.createProgramInfo(toDToCubeMapSource.vs.getSource(), toDToCubeMapSource.fs.getSource())
+            ,
+            backgroundProgramInfo = state.createProgramInfo(backgroundSource.vs.getSource(), backgroundSource.fs.getSource())
+            ,
+            prefilterProgramInfo = state.createProgramInfo(prefilterSource.vs.getSource(), prefilterSource.fs.getSource())
+            ,
+            toDToCubeMapProgramInfo = state.createProgramInfo(toDToCubeMapSource.vs.getSource(), toDToCubeMapSource.fs.getSource())
             , irrProgramInfo = state.createProgramInfo(irrSource.vs.getSource(), irrSource.fs.getSource());
 
         //state
@@ -176,7 +179,8 @@ export default class GL_Pbr {
         state.viewport(0, 0, 512, 512);
         state.use(toDToCubeMapProgramInfo.program);
         state.setMat4("projection", captureProjection);
-        state.setTexture2D("equirectangularMap", hdrMap, 0);
+        state.setInt("equirectangularMap", 0);
+        state.setTexture2D(hdrMap, 0);
 
         state.setVao(cubeVAO);
         for (let i = 0; i < 6; ++i) {
@@ -192,7 +196,8 @@ export default class GL_Pbr {
         state.use(irrProgramInfo.program);
         state.viewport(0, 0, 32, 32);
         state.setMat4("projection", captureProjection);
-        state.setTextureCube("environmentMap", envCubeMap, 0, true);
+        state.setInt("environmentMap", 0);
+        state.setTextureCube(envCubeMap, 0, true);
         state.setVao(cubeVAO);
         state.resizeRenderTarget(captureRenderTarget, 32, 32);
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -206,6 +211,7 @@ export default class GL_Pbr {
         state.use(prefilterProgramInfo.program);
         state.setMat4("projection", captureProjection);
         state.setVao(cubeVAO);
+        state.setInt("environmentMap", 0);
 
         let maxMipLevels = 5;
         for (let mip = 0; mip < maxMipLevels; ++mip) {
@@ -218,7 +224,7 @@ export default class GL_Pbr {
 
             for (let i = 0; i < 6; ++i) {
                 state.setMat4("view", captureViews[i]);
-                state.setTextureCube("environmentMap", envCubeMap, 0, true);
+                state.setTextureCube(envCubeMap, 0, true);
                 state.setCubeRenderTarget(captureRenderTarget, prefilterMap, i, mip);
                 state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 state.drawElements(36);
@@ -247,12 +253,21 @@ export default class GL_Pbr {
         state.setMat4("view", cameraView);
         state.setVec3("camPos", ...cameraPos);
         state.setFloat("opacity", 1.);
-        state.setTextureCube("irradianceMap", irradianceMap, 0);
-        state.setTextureCube("prefilterMap", prefilterMap, 1);
-        state.setTexture2D("brdfLUT", brdfMap, 2);
-        state.setTexture2D("albedoMap", albedoTexture, 3);
-        state.setTexture2D("normalMap", normalTexture, 4);
-        state.setTexture2D("aoMap", aoTexture, 5);
+        state.setInt("irradianceMap", 0);
+        state.setInt("prefilterMap", 1);
+        state.setInt("brdfLUT", 2);
+        state.setInt("albedoMap", 3);
+        state.setInt("normalMap", 4);
+        state.setInt("aoMap", 5);
+        state.setInt("metallicMap", 6);
+        state.setInt("roughnessMap", 5);
+
+        state.setTextureCube(irradianceMap, 0);
+        state.setTextureCube(prefilterMap, 1);
+        state.setTexture2D(brdfMap, 2);
+        state.setTexture2D(albedoTexture, 3);
+        state.setTexture2D(normalTexture, 4);
+        state.setTexture2D(aoTexture, 5);
 
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -271,7 +286,7 @@ export default class GL_Pbr {
 
         for (let row = 0; row < rowLen; row++) {
 
-            metallicMap[0] = 255 / rowLen*row;
+            metallicMap[0] = 255 - 255 / rowLen * row;
             state.updateTexture2D({
                 textureBuffer: metallicTexture,
                 image: metallicMap,
@@ -281,11 +296,10 @@ export default class GL_Pbr {
                 format: gl.LUMINANCE,
                 type: gl.UNSIGNED_BYTE
             });
-
-            state.setTexture2D("metallicMap", metallicTexture, 6);
+            state.setTexture2D(metallicTexture, 6);
             let curModelPos = glm.vec3.scale(glm.vec3.create(), offsetH, row);
             for (let col = 0; col < colLen; col++) {
-                roughnessMap[0]  = 255 / colLen*col;
+                roughnessMap[0] = 255 - 255 / colLen * col;
                 state.updateTexture2D({
                     textureBuffer: roughnessTexture,
                     image: roughnessMap,
@@ -296,7 +310,7 @@ export default class GL_Pbr {
                     type: gl.UNSIGNED_BYTE
                 });
 
-                state.setTexture2D("roughnessMap", roughnessTexture, 7);
+                state.setTexture2D(roughnessTexture, 7);
                 let resultModelPos = glm.vec3.add(glm.vec3.create(), curModelPos, glm.vec3.scale(glm.vec3.create(), offsetV, col));
                 let resultModelView = glm.mat4.translate(glm.mat4.create(), model, resultModelPos);
                 glm.mat4.rotate(resultModelView, resultModelView, Math.PI / 2, glm.vec3.set(glm.vec3.create(), -1, 1, 1));
@@ -309,7 +323,8 @@ export default class GL_Pbr {
         state.use(backgroundProgramInfo.program);
         state.setMat4("view", cameraView);
         state.setMat4("projection", cameraProjection);
-        state.setTextureCube("environmentMap", envCubeMap, 0);
+        state.setInt("environmentMap", 0);
+        state.setTextureCube(envCubeMap, 0);
         state.setVao(cubeVAO);
         state.drawElements(cubeGeometry.indices.data.length);
     };
