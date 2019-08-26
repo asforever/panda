@@ -7,7 +7,7 @@ export default class GL_Page {
         this.height = height;
     }
 
-    update() {
+    update(useRenderTarget = true) {
     }
 
     dispose() {

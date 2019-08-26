@@ -59,7 +59,7 @@ export default class GL_ModelPage extends GL_Page {
                 glm.vec3.set(glm.vec3.create(), 30, -30, 30),
             ];
             const pointLightColors = [
-                glm.vec3.set(glm.vec3.create(), 300, 300, 0),
+                glm.vec3.set(glm.vec3.create(), 3000, 3000, 0),
                 glm.vec3.set(glm.vec3.create(), 1000, 0, 300),
                 glm.vec3.set(glm.vec3.create(), 300, 0, 300),
                 glm.vec3.set(glm.vec3.create(), 300, 300, 300),
@@ -335,7 +335,7 @@ export default class GL_ModelPage extends GL_Page {
         return this.texture;
     }
 
-    update() {
+    update(useRenderTarget = true) {
         const state = this.state, gl = state.getContext();
 
         //draw pbr model
@@ -347,7 +347,7 @@ export default class GL_ModelPage extends GL_Page {
         state.use(program);
 
         gl.disable(gl.CULL_FACE);
-        state.setRenderTarget(renderTarget.target, renderTarget.texture);
+        if (useRenderTarget) state.setRenderTarget(renderTarget.target, renderTarget.texture);
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         modelMatrix.rotationByAxis(Math.PI / 180, new Vector3(0, 1, 0));
         state.setMat4("model", modelMatrix.data);

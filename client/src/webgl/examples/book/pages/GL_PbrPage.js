@@ -326,7 +326,7 @@ export default class GL_PbrPage extends GL_Page {
     }
 
 
-    update() {
+    update(useRenderTarget = true) {
         const state = this.state
             , gl = state.getContext()
             , sphereMeshInfo = this.sphereMeshInfo
@@ -360,7 +360,7 @@ export default class GL_PbrPage extends GL_Page {
 
         gl.enable(gl.CULL_FACE);
         gl.cullFace(gl.FRONT);
-        state.setRenderTarget(renderTarget.target, renderTarget.texture);
+        if(useRenderTarget)state.setRenderTarget(renderTarget.target, renderTarget.texture);
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         state.use(sphereMeshInfo.program);

@@ -32,14 +32,14 @@ const vec2 shadowoffset = vec2(0.07, -0.04);
 const float shadowsmoothness = 0.012;
 const float shadowint = 0.25;
 
-const float aawidth = 0.2;
-const int aasamples = 1;
+const float aawidth = 0.01;
+const int aasamples = 3;
 
-const bool showpoints = true;
+const bool showpoints = false;
 const bool colors = false;
-const bool anim = true;
+const bool anim = false;
 
-#define swap_x
+//#define swap_x
 
 // Simple "random" function
 float random(float co)
@@ -88,8 +88,6 @@ vec4 turnPage(vec2 fragCoord,vec2 uv)
     float ratio = width/height;
 
     // As long as one doesn't click on the canvas, the animation runs
-    vec2 mpoint;
-    bool firstcycle;
 
     vec2 mouse2 = mouse;
     #ifdef swap_x
@@ -99,16 +97,8 @@ vec4 turnPage(vec2 fragCoord,vec2 uv)
     mouse2.x = max(min(mouse2.x,ratio),0.001);
     mouse2.y = max(min(sqrt(pow(ratio/2.,2.) - pow(mouse2.x - ratio/2.,2.)),mouse2.y),0.0002);
 
-    if (mouse2.x==0. && mouse2.y==0. && anim)
-    {
-        firstcycle = mod(iTime/3.5, 2.)<1.;
-        mpoint = vec2(mod(iTime/3.5, 1.)*width*2.0, pow(mod(iTime/3.5, 1.), 2.5)*height/1.2 + 8.*smoothstep(0., 0.07, mod(iTime/3.5, 1.)));
-    }
-    else
-    {
-        mpoint = mouse2;
-        firstcycle = true;
-    }
+    vec2 mpoint = mouse2;
+
     vec2 midmpoint = mpoint*0.5;
     vec2 midmpointUV = midmpoint/vec2(height,height);
 
@@ -155,9 +145,7 @@ vec4 turnPage(vec2 fragCoord,vec2 uv)
 
             float difft = intfac*(1. - ambientt) + ambientt;
         	difft = difft*(shadow*shadowint + 1. - shadowint)/2. + mix(1. - shadowint, difft, shadow)/2.;
-            i = texture(iChannel0, mod((uvr3b - uvrcorr3)/vec2(-ratio, 1.), 1.));
-
-
+            i = texture(iChannel0, mod((uvr3b - uvrcorr3)/vec2(ratio, 1.), 1.));
         }
         else
         {
@@ -165,12 +153,10 @@ vec4 turnPage(vec2 fragCoord,vec2 uv)
             float diffb = intfac*(1. - ambientb) + ambientb;
         	float spec = pow(smoothstep(specpos.x - 0.35, specpos.x, intfac)*smoothstep(specpos.x + 0.35, specpos.x, intfac), specpow);
         	spec*= min(curl*10.,1.)*specint*pow(1. - pow(clamp(abs(uvr.y - specpos.y), 0., specwidth*2.), 2.)/specwidth, specpow);
-			if (firstcycle)
-                i = 1.*(colors?vec4(0.3, 1.0, 0.3, 1.):texture(iChannel1, mod((uvr3 - uvrcorr3)/vec2(ratio, 1.), 1.)));
-            else
-                i = diffb*(colors?vec4(0.3, 1.0, 0.3, 1.):mix(texture(iChannel0, mod((uvr3 - uvrcorr3)/vec2(ratio, 1.), 1.)), getPagebackColor(), bcolorMix));
-            //i = diffb*(colors?vec4(0.3, 1.0, 0.3, 1.):texture(iChannel1, mod((uvr3 - uvrcorr3)/vec2(-ratio, 1.), 1.)), vec4(0.3, 0., 0., 1.));
-         	i = mix(i, vec4(1.0), spec);
+
+        	vec4 bottomUV = texture(iChannel1, mod((uvr3 - uvrcorr3)/vec2(ratio, 1.),1.));
+            i = diffb*(colors?vec4(0.3, 1.0, 0.3, 1.):mix(bottomUV, getPagebackColor(), bcolorMix));
+            i = mix(i, vec4(1.0), spec);
         }
     }
     else
@@ -200,17 +186,11 @@ vec4 turnPage(vec2 fragCoord,vec2 uv)
         float pagefuncderbg = pageFunctionDer(uvrbg.x, ebg);
         float intfacbg = 1. - diffint*(1. - 1./pagefuncderbg);
         float difftbg = intfacbg*(1. - ambientt) + ambientt;
-
-        if (firstcycle)
-            i = colors?difftbg*vec4(0.3, 0.3, 1., 1.):texture(iChannel1, vec2(uv.x/ratio,uv.y));
-        else
-            i = colors?difftbg*vec4(0.3, 0.3, 1., 1.):texture(iChannel0, mod((uvr3bbg - uvrcorr3bg)/vec2(-ratio, 1.), 1.));
+        i = colors?difftbg*vec4(0.3, 0.3, 1., 1.):texture(iChannel1, mod((uvr3bbg - uvrcorr3bg)/vec2(-ratio, 1.), 1.));
         float bgshadow = 1. + shadowint*smoothstep(-0.08+shadowsmoothness*4., -0.08, uvr3b.y) - shadowint;
 
         if (uvr3b.y<0.)
            i*= bgshadow;
-
-
     }
     return i;
 }
