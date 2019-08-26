@@ -1,8 +1,16 @@
 import Webgl2Api from "./Webgl2Api";
 
 export default class WebglState2 {
-    constructor(canvas) {
-        this._gl = Webgl2Api.createWebglContext(canvas);
+    constructor(canvas,...option) {
+        const contextOption = {};
+        contextOption.alpha = option.alpha !== undefined ? option.alpha : false;
+        contextOption.depth = option.depth !== undefined ? option.depth : true;
+        contextOption.stencil = option.stencil !== undefined ? option.stencil : true;
+        contextOption.antialias = option.antialias !== undefined ? option.antialias : true;
+        contextOption.premultipliedAlpha = option.premultipliedAlpha !== undefined ? option.premultipliedAlpha : true;
+        contextOption.preserveDrawingBuffer = option.preserveDrawingBuffer !== undefined ? option.preserveDrawingBuffer : false;
+        contextOption.powerPreference = option.powerPreference !== undefined ? option.powerPreference : 'default';
+        this._gl = Webgl2Api.createWebglContext(canvas,contextOption);
         this.curProgram = null;
     }
 

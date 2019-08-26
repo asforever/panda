@@ -1,7 +1,7 @@
 export default class Webgl2Api {
     //create
-    static createWebglContext(canvas) {
-        return canvas.getContext('webgl2');
+    static createWebglContext(canvas, option) {
+        return canvas.getContext('webgl2', option);
     }
 
     static loaderShader(gl, type, source) {
@@ -99,10 +99,11 @@ export default class Webgl2Api {
     static createVaoAndBindAttributes(gl, attributes, indices) {
 
         const vao = gl.createVertexArray();
-        this.updateVao(gl, vao,attributes, indices);
+        this.updateVao(gl, vao, attributes, indices);
         return vao;
     }
-    static updateVao(gl, vao,attributes, indices){
+
+    static updateVao(gl, vao, attributes, indices) {
         gl.bindVertexArray(vao);
         const buffers = [];
         attributes.forEach((attribute, attributeKey) => {
@@ -122,7 +123,7 @@ export default class Webgl2Api {
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         gl.bindVertexArray(null);
 
-        buffers.forEach(buffer=>{
+        buffers.forEach(buffer => {
             gl.deleteBuffer(buffer);
         });
         return vao;
@@ -136,7 +137,7 @@ export default class Webgl2Api {
             , realFormat = format || gl.RGBA;
 
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        if (width>-1 && height > -1) {
+        if (width > -1 && height > -1) {
             gl.texImage2D(gl.TEXTURE_2D, level, realInternalFormat, width, height, 0, realFormat, realType, image);
         } else {
             gl.texImage2D(gl.TEXTURE_2D, level, realInternalFormat, realFormat, realType, image);

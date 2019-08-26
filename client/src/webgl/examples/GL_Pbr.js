@@ -3,7 +3,7 @@ import {
     ShaderLib,
     CubeGeometry,
     QuadGeometry,
-    SphereGeometry
+    SphereGeometry, Mesh_GL, Texture2D_GL, TextureCube_GL
 } from "../panda";
 
 import FileLoader from "../panda/loader/FileLoader";
@@ -12,6 +12,13 @@ import FileLoader from "../panda/loader/FileLoader";
 import * as glm from "gl-matrix";
 
 export default class GL_Pbr {
+    constructor() {
+        this.state = null;
+        this.canvas = null;
+        this.sphereMeshInfo = null;
+        this.backgroundMeshInfo = null;
+        this.isAnimate = false;
+    }
 
     async run(canvas) {
         const hdrEnvMap = await new FileLoader().load("./assets/textures/hdr/skybox.png", undefined, FileLoader.IMAGE);
@@ -34,9 +41,12 @@ export default class GL_Pbr {
             glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, 0, -1), glm.vec3.set(glm.vec3.create(), 0, -1, 0)),
         ];
 
-        const cameraProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 3, canvas.width / canvas.height, 0.1, 100);
-        const cameraView = glm.mat4.lookAt(glm.mat4.create(), glm.vec3.set(glm.vec3.create(), 30, 0, 70), glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, -1, 0));
-        const cameraPos = [30, 0, 70];
+        const cameraPos = glm.vec3.set(glm.vec3.create(), 0, 0, 110);
+        const cameraProjection = glm.mat4.perspective(glm.mat4.create(), Math.PI / 3, canvas.width / canvas.height, 0.1, 500);
+        const cameraView = glm.mat4.lookAt(glm.mat4.create()
+            , glm.vec3.set(glm.vec3.create(), cameraPos[0], cameraPos[1], cameraPos[2])
+            , glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, -1, 0));
+
 
         const cubeGeometry = new CubeGeometry();
         const quadGeometry = new QuadGeometry();
@@ -127,7 +137,7 @@ export default class GL_Pbr {
             minF: gl.LINEAR_MIPMAP_LINEAR,
         });
 
-        const irradianceMap = state.createTextureCube({
+        const irradianceTexture = state.createTextureCube({
             internalFormat: gl.RGBA16F,
             format: gl.RGBA,
             type: gl.FLOAT,
@@ -135,7 +145,7 @@ export default class GL_Pbr {
         });
 
         //prefilter map
-        const prefilterMap = state.createTextureCube({
+        const prefilterTexture = state.createTextureCube({
             internalFormat: gl.RGBA16F,
             format: gl.RGBA,
             type: gl.FLOAT,
@@ -145,7 +155,7 @@ export default class GL_Pbr {
         });
 
 
-        const brdfMap = state.createTexture2D({
+        const brdfTexture = state.createTexture2D({
             internalFormat: gl.RG16F,
             format: gl.RG,
             type: gl.FLOAT,
@@ -203,7 +213,7 @@ export default class GL_Pbr {
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         for (let i = 0; i < 6; ++i) {
             state.setMat4("view", captureViews[i]);
-            state.setCubeRenderTarget(captureRenderTarget, irradianceMap, i);
+            state.setCubeRenderTarget(captureRenderTarget, irradianceTexture, i);
             state.drawElements(36);
         }
         state.unBindRenderTarget();
@@ -225,7 +235,7 @@ export default class GL_Pbr {
             for (let i = 0; i < 6; ++i) {
                 state.setMat4("view", captureViews[i]);
                 state.setTextureCube(envCubeMap, 0, true);
-                state.setCubeRenderTarget(captureRenderTarget, prefilterMap, i, mip);
+                state.setCubeRenderTarget(captureRenderTarget, prefilterTexture, i, mip);
                 state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 state.drawElements(36);
             }
@@ -238,7 +248,7 @@ export default class GL_Pbr {
         state.viewport(0, 0, 512, 512);
         state.setVao(quadVAO);
         state.resizeRenderTarget(captureRenderTarget, 512, 512);
-        state.setRenderTarget(captureRenderTarget, brdfMap);
+        state.setRenderTarget(captureRenderTarget, brdfTexture);
         state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         state.drawElements(quadGeometry.indices.data.length);
         state.unBindRenderTarget();
@@ -261,28 +271,134 @@ export default class GL_Pbr {
         state.setInt("aoMap", 5);
         state.setInt("metallicMap", 6);
         state.setInt("roughnessMap", 5);
-
-        state.setTextureCube(irradianceMap, 0);
-        state.setTextureCube(prefilterMap, 1);
-        state.setTexture2D(brdfMap, 2);
-        state.setTexture2D(albedoTexture, 3);
-        state.setTexture2D(normalTexture, 4);
-        state.setTexture2D(aoTexture, 5);
-
-        state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        const rowLen = 6;
-        const colLen = 6;
-        const space = sphereGeometry.radius;
-        let model = glm.mat4.create();
-        glm.mat4.translate(model, model, glm.vec3.set(glm.vec3.create(), -space * (rowLen - 1) / 2, -space * (colLen - 1) / 2, 0));
-        let offsetH = glm.vec3.set(glm.vec3.create(), space, 0, 0);
-        let offsetV = glm.vec3.set(glm.vec3.create(), 0, space, 0);
-
         for (let i = 0; i < lightPositions.length; ++i) {
             state.setVec3("pointLightPositions[" + i + "]", ...lightPositions[i]);
             state.setVec3("pointLightColors[" + i + "]", ...lightColors[i]);
         }
+        state.use(backgroundProgramInfo.program);
+        state.setMat4("view", cameraView);
+        state.setMat4("projection", cameraProjection);
+        state.setInt("environmentMap", 0);
+
+        this.state = state;
+        this.canvas = canvas;
+        this.sphereMeshInfo = new Mesh_GL({
+            program: pbrProgramInfo.program,
+            vao: sphereVAO,
+            geometry: sphereGeometry,
+            projectionMatrix: cameraProjection,
+            viewMatrix: cameraView,
+            textures: {
+                "irradianceMap": new Texture2D_GL({textureGL: irradianceTexture}),
+                "prefilterMap": new Texture2D_GL({textureGL: prefilterTexture}),
+                "brdfLUTMap": new Texture2D_GL({textureGL: brdfTexture}),
+                "albedoMap": new Texture2D_GL({textureGL: albedoTexture}),
+                "normalMap": new Texture2D_GL({textureGL: normalTexture}),
+                "aoMap": new Texture2D_GL({textureGL: aoTexture}),
+                "metallicMap": new Texture2D_GL({textureGL: metallicTexture, image: metallicMap}),
+                "roughnessMap": new Texture2D_GL({textureGL: roughnessTexture, image: roughnessMap})
+            },
+        });
+
+        this.backgroundMeshInfo = new Mesh_GL({
+            program: backgroundProgramInfo.program,
+            vao: cubeVAO,
+            geometry: cubeGeometry,
+            textures: {
+                "environmentMap": new TextureCube_GL({textureGL: envCubeMap}),
+            },
+        });
+
+        this.onResize();
+        this.animate();
+        window.addEventListener("resize", this.onResize, false);
+
+        window.addEventListener("mousedown", this.onDown, false);
+        window.addEventListener("touchstart", this.onDown, false);
+
+    }
+
+    onDown = () => {
+        this.isAnimate = !this.isAnimate;
+    };
+
+    onResize = () => {
+        const state = this.state;
+        const width = this.canvas.width = window.innerWidth;
+        const height = this.canvas.height = window.innerHeight;
+        state.viewport(0, 0, width, height);
+        const projectionMatrix = this.sphereMeshInfo.projectionMatrix;
+        const viewMatrix = this.sphereMeshInfo.viewMatrix = glm.mat4.create();
+
+        const cameraPos = glm.vec3.set(glm.vec3.create(), 0, 0, 100 + 50 * Math.max(height / width - 1, 0));
+
+        glm.mat4.perspective(projectionMatrix, Math.PI / 3, width / height, 0.1, 500);
+        glm.mat4.lookAt(viewMatrix
+            , glm.vec3.set(glm.vec3.create(), cameraPos[0], cameraPos[1], cameraPos[2])
+            , glm.vec3.set(glm.vec3.create(), 0, 0, 0), glm.vec3.set(glm.vec3.create(), 0, -1, 0));
+
+
+        state.use(this.sphereMeshInfo.program);
+        state.setMat4("projection", projectionMatrix);
+        state.setMat4("view", viewMatrix);
+
+        state.use(this.backgroundMeshInfo.program);
+        state.setMat4("projection", projectionMatrix);
+        state.setMat4("view", viewMatrix);
+
+        this.reDraw();
+    };
+
+    animate() {
+        this.reDraw();
+        requestAnimationFrame(this.animate.bind(this));
+    }
+
+    reDraw() {
+        const state = this.state
+            , gl = state.getContext()
+            , sphereMeshInfo = this.sphereMeshInfo
+            , backMesh = this.backgroundMeshInfo
+            , sphereVAO = sphereMeshInfo.vao
+            , sphereGeo = sphereMeshInfo.geometry
+            , textures = sphereMeshInfo.textures
+            , rowLen = 6
+            , colLen = 6;
+
+        const space = sphereMeshInfo.geometry.radius + 1
+            , irradianceTexture = textures["irradianceMap"].textureGL
+            , prefilterTexture = textures["prefilterMap"].textureGL
+            , brdfTexture = textures["brdfLUTMap"].textureGL
+            , albedoTexture = textures["albedoMap"].textureGL
+            , normalTexture = textures["normalMap"].textureGL
+            , aoTexture = textures["aoMap"].textureGL
+
+            , metallicMap = textures["metallicMap"].image
+            , metallicTexture = textures["metallicMap"].textureGL
+            , roughnessMap = textures["roughnessMap"].image
+            , roughnessTexture = textures["roughnessMap"].textureGL
+            , environmentTexture = backMesh.textures["environmentMap"].textureGL;
+
+        let model = glm.mat4.create();
+        const allOffsetX = this.isAnimate ? 0 : -space * (rowLen - 1) / 2;
+        glm.mat4.translate(model, model, glm.vec3.set(glm.vec3.create(), allOffsetX, -space * (colLen - 1) / 2, 0));
+
+        let offsetH = glm.vec3.set(glm.vec3.create(), space, 0, 0);
+        let offsetV = glm.vec3.set(glm.vec3.create(), 0, space, 0);
+
+        gl.enable(gl.CULL_FACE);
+        gl.cullFace(gl.FRONT);
+
+        state.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        state.use(sphereMeshInfo.program);
+        state.setVao(sphereVAO);
+        state.setTextureCube(irradianceTexture, 0);
+        state.setTextureCube(prefilterTexture, 1);
+        state.setTexture2D(brdfTexture, 2);
+        state.setTexture2D(albedoTexture, 3);
+        state.setTexture2D(normalTexture, 4);
+        state.setTexture2D(aoTexture, 5);
 
         for (let row = 0; row < rowLen; row++) {
 
@@ -296,8 +412,10 @@ export default class GL_Pbr {
                 format: gl.LUMINANCE,
                 type: gl.UNSIGNED_BYTE
             });
+
             state.setTexture2D(metallicTexture, 6);
             let curModelPos = glm.vec3.scale(glm.vec3.create(), offsetH, row);
+
             for (let col = 0; col < colLen; col++) {
                 roughnessMap[0] = 255 - 255 / colLen * col;
                 state.updateTexture2D({
@@ -309,25 +427,21 @@ export default class GL_Pbr {
                     format: gl.LUMINANCE,
                     type: gl.UNSIGNED_BYTE
                 });
-
+                if (this.isAnimate) glm.mat4.rotate(model, model, Math.PI / 4 * Math.sin(new Date().getTime() / 10000), glm.vec3.set(glm.vec3.create(), 0, 1, 0));
                 state.setTexture2D(roughnessTexture, 7);
                 let resultModelPos = glm.vec3.add(glm.vec3.create(), curModelPos, glm.vec3.scale(glm.vec3.create(), offsetV, col));
                 let resultModelView = glm.mat4.translate(glm.mat4.create(), model, resultModelPos);
-                glm.mat4.rotate(resultModelView, resultModelView, Math.PI / 2, glm.vec3.set(glm.vec3.create(), -1, 1, 1));
-
                 state.setMat4("model", resultModelView);
-                state.drawElements(sphereGeometry.indices.data.length);
+                state.drawElements(sphereGeo.indices.data.length);
             }
         }
 
-        state.use(backgroundProgramInfo.program);
-        state.setMat4("view", cameraView);
-        state.setMat4("projection", cameraProjection);
-        state.setInt("environmentMap", 0);
-        state.setTextureCube(envCubeMap, 0);
-        state.setVao(cubeVAO);
-        state.drawElements(cubeGeometry.indices.data.length);
-    };
+
+        state.use(backMesh.program);
+        state.setVao(backMesh.vao);
+        state.setTextureCube(environmentTexture);
+        state.drawElements(backMesh.geometry.indices.data.length);
+    }
 
 }
 
